@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "article": {
+    "id": 28811129,
+    "version": 2,
+    "doi": "10.25378/janelia.28811129.v2",
+    "license": "CC BY 4.0",
+    "published_date": "2025-05-27",
+    "total_files": 297,
+    "total_size_bytes": 452233500962
+  },
+  "notes": [
+    "This is an intentionally small allow-list, not a mirror of the full article.",
+    "Paths are explicit because the public Figshare API exposes a flat file list.",
+    "The full release and raw neural files are deliberately absent."
+  ],
+  "files": [
+    {
+      "key": "imaging_metadata",
+      "id": 54183854,
+      "name": "Imaging_Exp_info.npy",
+      "path": "beh/Imaging_Exp_info.npy",
+      "kind": "behavior_metadata",
+      "size_bytes": 21194,
+      "md5": "2259b9e5a6cea8987d871c7fbe90a8f9",
+      "url": "https://ndownloader.figshare.com/files/54183854"
+    },
+    {
+      "key": "area_outlines",
+      "id": 54183959,
+      "name": "areas.npz",
+      "path": "retinotopy/areas.npz",
+      "kind": "retinotopy_outline",
+      "size_bytes": 158305,
+      "md5": "7011149bd83a576e68761c5886287489",
+      "url": "https://ndownloader.figshare.com/files/54183959"
+    },
+    {
+      "key": "tx119_behavior",
+      "id": 54183911,
+      "name": "Beh_unsup_test1.npy",
+      "path": "beh/Beh_unsup_test1.npy",
+      "kind": "behavior",
+      "size_bytes": 270497670,
+      "md5": "00ddb9a93e9972186ebef2521e2568dd",
+      "sha256": "0111710701d5d71740743d2402b08ee36332af2c511f34d011a4bef4c0ac9edd",
+      "url": "https://ndownloader.figshare.com/files/54183911"
+    },
+    {
+      "key": "tx119_svd",
+      "id": 54866057,
+      "name": "TX119_2023_12_24_1_SVD_dec.npy",
+      "path": "SVD_dec/TX119_2023_12_24_1_SVD_dec.npy",
+      "kind": "svd_dec",
+      "size_bytes": 66967262,
+      "md5": "633aa6978689a18f8d124a8443c8a8e6",
+      "sha256": "e0e4b78272b05398e451cc79c75aeb778564b72c051c674efc13e66bae4fa47a",
+      "url": "https://ndownloader.figshare.com/files/54866057"
+    },
+    {
+      "key": "tx119_retinotopy",
+      "id": 54184070,
+      "name": "TX119_2023_12_24_trans.npz",
+      "path": "retinotopy/TX119_2023_12_24_trans.npz",
+      "kind": "retinotopy",
+      "size_bytes": 983358,
+      "md5": "ddda2db80ae338435ffa73b289690ae0",
+      "sha256": "767de68b4c8928ec244f4c3133c42311622bd80a6e57d0f36462c445b3ddbbed",
+      "url": "https://ndownloader.figshare.com/files/54184070"
+    }
+  ],
+  "profiles": {
+    "metadata": ["imaging_metadata", "area_outlines"],
+    "atlas_demo_source": ["tx119_behavior", "tx119_svd", "tx119_retinotopy"]
+  }
+}

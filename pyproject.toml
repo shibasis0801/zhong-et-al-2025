@@ -5,11 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "zhong2025"
 version = "0.1.0"
-description = "Colab data atlas and safe catalog for Zhong et al. (2025)"
+description = "Colab data atlas and notebook graph for Zhong et al. (2025)"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "GPL-3.0-only"}
 dependencies = [
+  "ipywidgets>=8.1,<9",
   "matplotlib>=3.8,<4",
   "numpy>=1.26,<3",
   "requests>=2.31,<3",
@@ -25,6 +26,9 @@ dev = [
   "nbformat>=5.10,<6",
   "pytest>=8,<9",
 ]
+
+[tool.setuptools]
+py-modules = ["graph"]
 
 [tool.setuptools.packages.find]
 include = ["zhong2025*"]

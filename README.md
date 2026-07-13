@@ -1,6 +1,7 @@
 # Zhong et al. (2025): Neuromatch data workspace
 
 [![Open the complete data atlas in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shibasis0801/zhong-et-al-2025/blob/main/notebooks/zhong2025_data_atlas_colab.ipynb)
+[![Open graph experiments in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shibasis0801/zhong-et-al-2025/blob/main/notebooks/zhong2025_graph_experiments_colab.ipynb)
 
 This repository gives the Neuromatch team a shared, neutral understanding of the
 Zhong et al. release before the team chooses an analysis. It focuses on setup,
@@ -13,11 +14,12 @@ teammates. No one person is expected to supply every kind of expertise.
 
 ## Start here
 
-1. Open the Colab notebook with the badge above. The link will work after these
-   changes are pushed to GitHub.
-2. Choose **Runtime → Run all**. A CPU runtime is enough.
-3. Work through the inventory, experiment timeline, join rules, schemas, and
+1. Open the data atlas with the first badge and choose **Runtime → Run all**. A
+   CPU runtime is enough.
+2. Work through the inventory, experiment timeline, join rules, schemas, and
    compact real-data example together.
+3. Open the graph experiment notebook with the second badge to see the same
+   small recording as a visible, rerunnable flow.
 4. Record the team's eventual question and decisions in the private shared
    workspace, after everyone has the same data model.
 
@@ -40,7 +42,9 @@ catalog of the complete Figshare v2 release and a 2.9 MB real-data example.
 
 ## Repository map
 
-- [`notebooks/zhong2025_data_atlas_colab.ipynb`](notebooks/zhong2025_data_atlas_colab.ipynb): the single team-facing notebook
+- [`notebooks/zhong2025_data_atlas_colab.ipynb`](notebooks/zhong2025_data_atlas_colab.ipynb): complete data and experiment orientation
+- [`notebooks/zhong2025_graph_experiments_colab.ipynb`](notebooks/zhong2025_graph_experiments_colab.ipynb): one neutral sample flow with interactive variations
+- [`graph.py`](graph.py): the complete notebook-only graph runner and widget surface
 - [`zhong2025/atlas.py`](zhong2025/atlas.py): validated catalog and relationship helpers
 - [`zhong2025/assets/`](zhong2025/assets): one canonical copy of the safe catalog, experiment index, curated download manifest, and compact example
 - [`scripts/create_data_atlas_notebook.py`](scripts/create_data_atlas_notebook.py): reviewable notebook source
@@ -51,6 +55,25 @@ catalog of the complete Figshare v2 release and a 2.9 MB real-data example.
 
 All upstream paper-reproduction notebooks and figure scripts live only in
 `original/`; duplicate root copies were removed. Do not edit that folder.
+
+## Graph experiments
+
+The `graph` module keeps repeated notebook analysis understandable without
+introducing a workflow platform. Ordinary Python functions are nodes, their
+arguments and declared returns are named ports, and matching names show the
+data flow. A run records its settings, intermediate outputs, execution order,
+and timings.
+
+The module intentionally provides only:
+
+- `@graph.node(outputs=...)`;
+- `graph.Graph(...)`;
+- `run`, `run_many`, `diagram`, and `widget`.
+
+There is no graph editor, scheduler, persistence layer, parallel runtime, or
+cross-run cache. The included experiment summarizes one recording under
+different descriptive settings and explicitly avoids inference or a preferred
+scientific comparison.
 
 ## Dataset safety
 

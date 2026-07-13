@@ -3,6 +3,8 @@
 [![Open the complete data atlas in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shibasis0801/zhong-et-al-2025/blob/main/notebooks/zhong2025_data_atlas_colab.ipynb)
 [![Open graph experiments in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shibasis0801/zhong-et-al-2025/blob/main/notebooks/zhong2025_graph_experiments_colab.ipynb)
 
+[Open the shared Neuromatch workspace in Google Drive](https://drive.google.com/drive/folders/1jKMIEf2srnu_Dg_TP6NKk7XBIDxYB4EN)
+
 This repository gives the Neuromatch team a shared, neutral understanding of the
 Zhong et al. release before the team chooses an analysis. It focuses on setup,
 data exploration, experimental design, schemas, and relationships. It does not
@@ -50,6 +52,8 @@ catalog of the complete Figshare v2 release and a 2.9 MB real-data example.
 - [`scripts/create_data_atlas_notebook.py`](scripts/create_data_atlas_notebook.py): reviewable notebook source
 - [`scripts/build_atlas_assets.py`](scripts/build_atlas_assets.py): rebuilds normalized JSON from pinned Figshare metadata
 - [`scripts/build_atlas_demo.py`](scripts/build_atlas_demo.py): rebuilds the compact example from checksum-verified sources
+- [`drive-sync.json`](drive-sync.json): non-secret Drive folder IDs and import-safety policy
+- [`scripts/drive_sync.py`](scripts/drive_sync.py): committed-snapshot publishing and reviewed Drive imports
 - [`original/`](original): untouched byte-for-byte snapshot of upstream commit `ba64ac697f5d9914926baac79399e80707a5f3a6`
 - [`tests/`](tests): catalog, download-safety, notebook, packaging-data, and upstream-integrity checks
 
@@ -74,6 +78,53 @@ There is no graph editor, scheduler, persistence layer, parallel runtime, or
 cross-run cache. The included experiment summarizes one recording under
 different descriptive settings and explicitly avoids inference or a preferred
 scientific comparison.
+
+## Google Drive collaboration
+
+Git remains the source of truth. Drive has two deliberately separate areas:
+
+- **Current** is a read-only, browsable export of the latest accepted commit.
+- **Team changes** is the editable inbox for proposed notebooks.
+
+This split prevents an automatic upload from overwriting a teammate's work.
+Only Git-tracked files are published, so `.git`, environments, caches, downloaded
+data, and other local files never enter Drive. The `original/` snapshot is
+published for reference and its pinned upstream tree is checked before every
+upload.
+
+When cloud credentials are configured, every commit pushed to GitHub `main` is
+published by one serialized GitHub workflow. The local hook is informational
+only, avoiding competing uploads from different computers. To inspect or use
+Drive sync manually on a new clone:
+
+```bash
+# Install rclone, create a Google Drive remote named gdrive, then:
+git config core.hooksPath .githooks
+python3 scripts/drive_sync.py doctor
+```
+
+The commands are intentionally small and preview destructive or inbound work:
+
+```bash
+python3 scripts/drive_sync.py push                 # preview Current
+python3 scripts/drive_sync.py push --apply         # publish committed HEAD
+python3 scripts/drive_sync.py pull                 # preview Team changes
+python3 scripts/drive_sync.py pull --apply         # import into a clean worktree
+```
+
+`pull --apply` never commits, deletes repository files, or changes protected
+configuration. For safety and simplicity, **Team changes accepts only new
+notebooks**. They are imported under `notebooks/team_changes/`, and an existing
+path is never overwritten. Applied contributions are removed from the inbox;
+review the resulting `git diff`, run the tests, and commit in the normal way.
+To propose an edit to an existing notebook, upload it with a new descriptive
+filename so the difference remains explicit during review.
+
+The workflow activates when the repository secret `GDRIVE_RCLONE_TOKEN` is
+configured. OAuth credentials and local rclone configuration must never be
+committed. Rclone's shared Google OAuth client is being retired during 2026;
+for durable automation, configure a team-owned client through the optional
+`GDRIVE_RCLONE_CLIENT_ID` and `GDRIVE_RCLONE_CLIENT_SECRET` secrets.
 
 ## Dataset safety
 

@@ -32,12 +32,17 @@ def test_generator_matches_committed_atlas_notebook():
     assert generated == committed
 
 
-def test_fresh_colab_clone_skips_existing_checkout_dirty_guard():
+def test_atlas_colab_setup_uses_the_shared_drive_only():
     notebook = nbformat.read(NOTEBOOK, as_version=4)
     setup_source = notebook.cells[2].source
-    assert "fresh_clone = False" in setup_source
-    assert "fresh_clone = True" in setup_source
-    assert "if not fresh_clone and subprocess.run(" in setup_source
+    assert "drive.mount(\"/content/drive\", force_remount=False)" in setup_source
+    assert "Zhong et al. 2025 - Neuromatch Team Workspace" in setup_source
+    assert "Zhong2025_Janelia_v2" in setup_source
+    assert "team_tools/packages" in setup_source
+    source = _source(notebook).lower()
+    assert "github" not in source
+    assert "git clone" not in source
+    assert "git+https" not in source
 
 
 def test_atlas_is_neutral_and_has_no_data_download_path():

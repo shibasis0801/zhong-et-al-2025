@@ -1,6 +1,4 @@
 from pathlib import Path
-import subprocess
-import sys
 import time
 
 import nbformat
@@ -13,6 +11,12 @@ NOTEBOOK = Path("notebooks/zhong2025_graph_experiments_colab.ipynb")
 
 def _source(notebook):
     return "\n".join(cell.source for cell in notebook.cells)
+
+
+def _walk_widgets(widget):
+    yield widget
+    for child in getattr(widget, "children", ()):
+        yield from _walk_widgets(child)
 
 
 def _execute_default_path(monkeypatch):
@@ -65,35 +69,17 @@ def test_graph_notebook_stays_small_neutral_and_offline_for_data():
     assert ("rea" + "ktor") not in source.lower()
 
 
-def test_setup_detects_a_fresh_colab_runtime_before_it_is_imported(
-    tmp_path, monkeypatch
-):
-    package = tmp_path / "google" / "colab"
-    package.mkdir(parents=True)
-    (tmp_path / "google" / "__init__.py").write_text("")
-    (package / "__init__.py").write_text("")
-    (package / "output.py").write_text(
-        "def enable_custom_widget_manager():\n    pass\n"
-    )
-    for module_name in ("google.colab.output", "google.colab", "google"):
-        monkeypatch.delitem(sys.modules, module_name, raising=False)
-    monkeypatch.syspath_prepend(str(tmp_path))
-
-    installs = []
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        lambda command, check: installs.append((command, check)),
-    )
+def test_graph_colab_setup_uses_the_shared_drive_only():
     notebook = nbformat.read(NOTEBOOK, as_version=4)
     setup = next(cell for cell in notebook.cells if cell.id == "graph-002")
-    namespace = {}
-    exec(compile(setup.source, "graph-colab-setup", "exec"), namespace)
-
-    assert namespace["IN_COLAB"] is True
-    assert len(installs) == 1
-    assert installs[0][1] is True
-    assert "git+https://github.com/shibasis0801/zhong-et-al-2025.git@main" in installs[0][0]
+    assert "drive.mount('/content/drive', force_remount=False)" in setup.source
+    assert "Zhong et al. 2025 - Neuromatch Team Workspace" in setup.source
+    assert "Zhong2025_Janelia_v2" in setup.source
+    assert "team_tools/packages" in setup.source
+    source = _source(notebook).lower()
+    assert "github" not in source
+    assert "git clone" not in source
+    assert "git+https" not in source
 
 
 def test_graph_notebook_teaches_the_complete_small_surface():
@@ -102,13 +88,16 @@ def test_graph_notebook_teaches_the_complete_small_surface():
     for required in (
         "The four-word mental model",
         "The sample experiment",
-        "Build and inspect the flow",
-        "Run once",
-        "Change settings without changing the flow",
+        "Build the flow",
+        "Configure and run",
+        "Optional: run the same flow in Python",
         "Run explicit variations",
         "Inspect a run instead of trusting hidden state",
         "Write another sequential flow",
         "Boundaries of this example",
+        "Hollow sockets",
+        "Stimulus role",
+        "Published component",
         "@graph.node(outputs=\"demo\")",
         "experiment = graph.Graph(",
         "experiment.widget(",
@@ -146,11 +135,35 @@ def test_graph_notebook_executes_quickly_with_real_compact_data(monkeypatch):
         "load_compact_recording",
         "select_trials",
         "summarize_position_profiles",
-        "plot_position_profiles",
     )
     panel = namespace["run_panel"]
-    assert panel.children[2].description == "Run flow"
-    assert len(panel.children[1].children) == 4
+    assert panel.children[1].description == "Run flow"
+    port_editor = panel.children[0]
+    cards = port_editor.children[1].children
+    assert len(cards) == 4
+    descriptions = {
+        widget.description
+        for widget in _walk_widgets(port_editor)
+        if hasattr(widget, "description") and widget.description
+    }
+    assert descriptions == {
+        "Stimulus role",
+        "Corridor region",
+        "Published component",
+        "Summary",
+    }
+    card_text = [
+        " ".join(
+            widget.value
+            for widget in _walk_widgets(card)
+            if hasattr(widget, "value") and isinstance(widget.value, str)
+        )
+        for card in cards
+    ]
+    assert "← load_compact_recording.demo" in card_text[1]
+    assert "← load_compact_recording.demo" in card_text[2]
+    assert "← select_trials.selection" in card_text[2]
+    assert "← summarize_position_profiles.summary" in card_text[3]
 
 
 def test_wheel_configuration_includes_the_single_graph_module():

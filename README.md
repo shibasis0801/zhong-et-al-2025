@@ -1,9 +1,10 @@
 # Zhong et al. (2025): Neuromatch data workspace
 
-[![Open the complete data atlas in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shibasis0801/zhong-et-al-2025/blob/main/notebooks/zhong2025_data_atlas_colab.ipynb)
-[![Open graph experiments in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shibasis0801/zhong-et-al-2025/blob/main/notebooks/zhong2025_graph_experiments_colab.ipynb)
-
 [Open the shared Neuromatch workspace in Google Drive](https://drive.google.com/drive/folders/1jKMIEf2srnu_Dg_TP6NKk7XBIDxYB4EN)
+
+[00 — Connect to the shared data](https://colab.research.google.com/drive/1b2GEoNKX578kYF1xbteSTtajiXit7212) ·
+[01 — Understand the complete dataset](https://colab.research.google.com/drive/1W7r6ZNp-R2h1LOd_WBzuNAsCiysyLUc1) ·
+[02 — Run visible graph experiments](https://colab.research.google.com/drive/1GIYknr_LrG3q2Xhd8s9_PlyJIS3TwO_9)
 
 This repository gives the Neuromatch team a shared, neutral understanding of the
 Zhong et al. release before the team chooses an analysis. It focuses on setup,
@@ -16,16 +17,18 @@ teammates. No one person is expected to supply every kind of expertise.
 
 ## Start here
 
-1. Open the data atlas with the first badge and choose **Runtime → Run all**. A
-   CPU runtime is enough.
-2. Work through the inventory, experiment timeline, join rules, schemas, and
+1. In Google Drive, add **Zhong et al. 2025 - Neuromatch Team Workspace** as a
+   shortcut in **My Drive**. Do not make a copy.
+2. Open `team_tools/01_understand_the_dataset_colab.ipynb` and choose
+   **Runtime → Run all**. A CPU runtime is enough.
+3. Work through the inventory, experiment timeline, join rules, schemas, and
    compact real-data example together.
-3. Open the graph experiment notebook with the second badge to see the same
-   small recording as a visible, rerunnable flow.
-4. Record the team's eventual question and decisions in the private shared
+4. Open `team_tools/02_graph_experiments_colab.ipynb` to see the same small
+   recording as a visible, rerunnable flow.
+5. Record the team's eventual question and decisions in the private shared
    workspace, after everyone has the same data model.
 
-The default run downloads no published data. It uses a committed, pickle-free
+The default run downloads no published data. It uses a bundled, pickle-free
 catalog of the complete Figshare v2 release and a 2.9 MB real-data example.
 
 ## What the atlas covers
@@ -65,8 +68,11 @@ All upstream paper-reproduction notebooks and figure scripts live only in
 The `graph` module keeps repeated notebook analysis understandable without
 introducing a workflow platform. Ordinary Python functions are nodes, their
 arguments and declared returns are named ports, and matching names show the
-data flow. A run records its settings, intermediate outputs, execution order,
-and timings.
+data flow. The notebook UI keeps each editable input inside its node, uses
+filled and hollow sockets to distinguish wired data from values, and shows each
+port's upstream source or downstream targets on the same card surface. After a
+run, the cards show completion timings and compact output previews. A run
+records its settings, intermediate outputs, execution order, and timings.
 
 The module intentionally provides only:
 
@@ -74,57 +80,23 @@ The module intentionally provides only:
 - `graph.Graph(...)`;
 - `run`, `run_many`, `diagram`, and `widget`.
 
-There is no graph editor, scheduler, persistence layer, parallel runtime, or
-cross-run cache. The included experiment summarizes one recording under
-different descriptive settings and explicitly avoids inference or a preferred
-scientific comparison.
+There is no draggable desktop canvas, node palette, scheduler, persistence
+layer, parallel runtime, or cross-run cache. The included experiment summarizes
+one recording under different descriptive settings and explicitly avoids
+inference or a preferred scientific comparison.
 
 ## Google Drive collaboration
 
-Git remains the source of truth. Drive has two deliberately separate areas:
+Google Drive is the team's entry point. Every notebook mounts each teammate's
+own Drive and accepts either of these shortcuts:
 
-- **Current** is a read-only, browsable export of the latest accepted commit.
-- **Team changes** is the editable inbox for proposed notebooks.
+- the workspace shortcut with its existing name; or
+- the dataset shortcut renamed `Zhong2025_Janelia_v2`.
 
-This split prevents an automatic upload from overwriting a teammate's work.
-Only Git-tracked files are published, so `.git`, environments, caches, downloaded
-data, and other local files never enter Drive. The `original/` snapshot is
-published for reference and its pinned upstream tree is checked before every
-upload.
-
-When cloud credentials are configured, every commit pushed to GitHub `main` is
-published by one serialized GitHub workflow. The local hook is informational
-only, avoiding competing uploads from different computers. To inspect or use
-Drive sync manually on a new clone:
-
-```bash
-# Install rclone, create a Google Drive remote named gdrive, then:
-git config core.hooksPath .githooks
-python3 scripts/drive_sync.py doctor
-```
-
-The commands are intentionally small and preview destructive or inbound work:
-
-```bash
-python3 scripts/drive_sync.py push                 # preview Current
-python3 scripts/drive_sync.py push --apply         # publish committed HEAD
-python3 scripts/drive_sync.py pull                 # preview Team changes
-python3 scripts/drive_sync.py pull --apply         # import into a clean worktree
-```
-
-`pull --apply` never commits, deletes repository files, or changes protected
-configuration. For safety and simplicity, **Team changes accepts only new
-notebooks**. They are imported under `notebooks/team_changes/`, and an existing
-path is never overwritten. Applied contributions are removed from the inbox;
-review the resulting `git diff`, run the tests, and commit in the normal way.
-To propose an edit to an existing notebook, upload it with a new descriptive
-filename so the difference remains explicit during review.
-
-The workflow activates when the repository secret `GDRIVE_RCLONE_TOKEN` is
-configured. OAuth credentials and local rclone configuration must never be
-committed. Rclone's shared Google OAuth client is being retired during 2026;
-for durable automation, configure a team-owned client through the optional
-`GDRIVE_RCLONE_CLIENT_ID` and `GDRIVE_RCLONE_CLIENT_SECRET` secrets.
+The shared dataset remains read-only. Save personal outputs in
+`MyDrive/Zhong2025_personal_results`, and put only deliberately shared results
+in the team's agreed results area. Team members do not need a source checkout
+or a separate copy of the 421 GiB release.
 
 ## Dataset safety
 
@@ -179,7 +151,6 @@ python scripts/build_atlas_assets.py \
   *Nature* (2025), [DOI 10.1038/s41586-025-09180-y](https://doi.org/10.1038/s41586-025-09180-y)
 - Published data, Figshare v2,
   [DOI 10.25378/janelia.28811129.v2](https://doi.org/10.25378/janelia.28811129.v2), CC BY 4.0
-- [Released paper-reproduction code](https://github.com/MouseLand/zhong-et-al-2025)
 
 Repository code is distributed under GNU GPL v3. The compact derivative retains
 the source dataset's CC BY 4.0 terms; cite Zhong et al. and the Figshare dataset.

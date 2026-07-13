@@ -49,25 +49,30 @@ By the end, every teammate should be able to explain:
 5. which relationships are absent and must not be assumed; and
 6. what a proposed data slice would cost before downloading it.
 
-The default run is CPU-only and uses a committed, pickle-free metadata catalog
-plus a 2.9 MB real-data example. It downloads **none of the 421 GiB release**.
+The default run is CPU-only and uses a checksum-pinned, pickle-free metadata
+catalog plus a 2.9 MB real-data example. It downloads **none of the 421 GiB
+release**.
 """
         ),
         markdown(
             r"""
-## 0. Reproducible setup
+## 0. Connect to the team's Drive workspace
 
-In Colab, the next cell checks out the requested repository revision and installs
-the small helper package. Use `main` while the atlas is changing and pin a commit
-SHA when the team wants a fixed reference. Local execution reuses the current
-checkout. The only first-run network transfer is the Git repository itself.
+Before the first run, open the shared **Zhong et al. 2025 - Neuromatch Team
+Workspace** folder in Google Drive and choose **Organize → Add shortcut → My
+Drive**. Keep that shortcut's existing name. If you already added the dataset
+folder itself as **`Zhong2025_Janelia_v2`**, that works too. You need only one
+shortcut, and you should not make a copy.
+
+The next cell mounts Drive once and loads the small, versioned helper bundle
+stored beside the team notebooks. It does not clone anything or download the
+Janelia dataset.
 """
         ),
         code(
             r"""
 from __future__ import annotations
 
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -79,71 +84,56 @@ except ImportError:
 else:
     IN_COLAB = True
 
-REPO_URL = "https://github.com/shibasis0801/zhong-et-al-2025.git"
-REPO_REF = "main"  # @param {type:"string"}
-
 if IN_COLAB:
-    REPO_ROOT = Path("/content/zhong-et-al-2025")
-    fresh_clone = False
-    if not (REPO_ROOT / ".git").exists():
-        if REPO_ROOT.exists() and any(REPO_ROOT.iterdir()):
-            raise RuntimeError(f"Refusing to overwrite non-Git directory {REPO_ROOT}")
-        subprocess.run(
-            ["git", "clone", "--filter=blob:none", "--no-checkout", REPO_URL, str(REPO_ROOT)],
-            check=True,
+    from google.colab import drive
+
+    drive.mount("/content/drive", force_remount=False)
+    MY_DRIVE = Path("/content/drive/MyDrive")
+    DATASET_CHOICES = {
+        "dataset shortcut": MY_DRIVE / "Zhong2025_Janelia_v2",
+        "workspace shortcut": (
+            MY_DRIVE
+            / "Zhong et al. 2025 - Neuromatch Team Workspace"
+            / "Janelia dataset - Zhong et al. 2025 (Figshare v2)"
+        ),
+    }
+    match = next(
+        ((label, path) for label, path in DATASET_CHOICES.items() if path.is_dir()),
+        None,
+    )
+    if match is None:
+        raise FileNotFoundError(
+            "Shared data not found. In Google Drive, add either the team workspace "
+            "or dataset folder as a shortcut in My Drive, then rerun this cell."
         )
-        fresh_clone = True
-    remote_url = subprocess.run(
-        ["git", "remote", "get-url", "origin"],
-        cwd=REPO_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    if remote_url.rstrip("/").removesuffix(".git") != REPO_URL.rstrip("/").removesuffix(".git"):
-        raise RuntimeError(f"Unexpected origin in {REPO_ROOT}: {remote_url}")
-    if not fresh_clone and subprocess.run(
-        ["git", "status", "--porcelain"],
-        cwd=REPO_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip():
-        raise RuntimeError("Existing Colab checkout has local changes; use a fresh runtime")
+    SHORTCUT_KIND, DATASET_ROOT = match
+    wheels = sorted((DATASET_ROOT / "team_tools/packages").glob("zhong2025-*.whl"))
+    if len(wheels) != 1:
+        raise FileNotFoundError("Expected one zhong2025 helper bundle in team_tools/packages")
     subprocess.run(
-        ["git", "fetch", "--depth", "1", "origin", REPO_REF],
-        cwd=REPO_ROOT,
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-q",
+            "--no-deps",
+            "--force-reinstall",
+            str(wheels[0]),
+        ],
         check=True,
     )
-    subprocess.run(
-        ["git", "checkout", "--detach", "FETCH_HEAD"],
-        cwd=REPO_ROOT,
-        check=True,
-    )
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "-e", str(REPO_ROOT)],
-        check=True,
-    )
+    print(f"Shared data: {DATASET_ROOT} ({SHORTCUT_KIND})")
 else:
     candidates = [Path.cwd(), Path.cwd().parent, Path.cwd().parent.parent]
-    REPO_ROOT = next(
+    PROJECT_ROOT = next(
         (candidate for candidate in candidates if (candidate / "pyproject.toml").exists()),
         None,
     )
-    if REPO_ROOT is None:
-        raise RuntimeError("Run this notebook from inside the repository checkout")
-    sys.path.insert(0, str(REPO_ROOT))
-
-os.chdir(REPO_ROOT)
-HELPER_COMMIT = subprocess.run(
-    ["git", "rev-parse", "HEAD"],
-    cwd=REPO_ROOT,
-    check=True,
-    capture_output=True,
-    text=True,
-).stdout.strip()
-print(f"Repository: {REPO_ROOT}")
-print(f"Revision: {HELPER_COMMIT} (requested ref: {REPO_REF})")
+    if PROJECT_ROOT is None:
+        raise RuntimeError("Run this notebook from inside the local project folder")
+    sys.path.insert(0, str(PROJECT_ROOT))
+    print(f"Local project: {PROJECT_ROOT}")
 print(f"Python: {sys.version.split()[0]} | Colab: {IN_COLAB}")
 """
         ),
@@ -286,10 +276,10 @@ plt.show()
 ## 2. The complete release at a glance
 
 Version 2 is pinned by article ID, version, file IDs, byte counts, and checksums.
-The catalog below is committed as JSON, so it can be inspected offline. The full
-release is **452,233,500,962 bytes (421.175 GiB)**; raw neural arrays dominate
-storage. The compact example is not a replacement for the release—it is only a
-safe object for learning its axes and labels.
+The catalog below is bundled as JSON, so it can be inspected without scanning
+Drive. The full release is **452,233,500,962 bytes (421.175 GiB)**; raw neural
+arrays dominate storage. The compact example is not a replacement for the
+release—it is only a safe object for learning its axes and labels.
 """
         ),
         code(
@@ -896,11 +886,10 @@ without guessing:
 - [ ] Is any source file pickled, and has it been checksum-verified before load?
 
 Once these answers are shared, the team can choose its research question without
-the setup repository steering that decision.
+the setup materials steering that decision.
 
 Sources: [Zhong et al., Nature (2025)](https://doi.org/10.1038/s41586-025-09180-y),
-[Figshare dataset v2](https://doi.org/10.25378/janelia.28811129.v2), and the
-[released processing code](https://github.com/MouseLand/zhong-et-al-2025).
+and [Figshare dataset v2](https://doi.org/10.25378/janelia.28811129.v2).
 """
         ),
     ]

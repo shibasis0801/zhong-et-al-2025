@@ -6,6 +6,20 @@ import pytest
 import graph
 
 
+def _walk_widgets(widget):
+    yield widget
+    for child in getattr(widget, "children", ()):
+        yield from _walk_widgets(child)
+
+
+def _html_text(widget):
+    return " ".join(
+        item.value
+        for item in _walk_widgets(widget)
+        if hasattr(item, "value") and isinstance(item.value, str)
+    )
+
+
 def _example_graph(calls=None):
     calls = calls if calls is not None else []
 
@@ -149,22 +163,36 @@ def test_required_external_setting_can_be_validated_and_supplied():
     assert flow.run(recording="demo")["value"] == "demo"
 
 
-def test_widget_contains_diagram_controls_run_button_and_output():
+def test_widget_is_one_node_card_surface_with_controls_and_output():
     widgets = pytest.importorskip("ipywidgets")
     flow = _example_graph()
     panel = flow.widget(controls={"scale": [1, 2, 3]}, show="summary")
 
     assert isinstance(panel, widgets.VBox)
-    diagram, controls, button, status, output = panel.children
-    assert isinstance(diagram, widgets.HTML)
-    assert "Named connections" in diagram.value
-    assert isinstance(controls, widgets.HBox)
+    surface, button, status, output = panel.children
+    assert isinstance(surface, widgets.VBox)
+    assert isinstance(surface.children[1], widgets.HBox)
+    assert len(surface.children[1].children) == 3
+    assert not any(
+        "<svg" in item.value
+        for item in _walk_widgets(panel)
+        if isinstance(item, widgets.HTML)
+    )
+    assert "<svg" in flow.diagram().value
+    controls = list(_walk_widgets(surface))
+    assert any(isinstance(item, widgets.Dropdown) for item in controls)
+    assert any(isinstance(item, widgets.IntText) for item in controls)
+    surface_text = _html_text(surface)
+    assert "← load.data" in surface_text
+    assert "→ select.data, summarize.data" in surface_text
+    assert "← select.selected" in surface_text
     assert isinstance(button, widgets.Button)
     assert isinstance(status, widgets.HTML)
     assert isinstance(output, widgets.Output)
     button.click()
     assert "Ran 3 nodes" in status.value
-    assert "done" in diagram.value
+    assert "role='status'" in status.value
+    assert "done" in _html_text(surface)
 
 
 def test_failed_widget_rerun_clears_the_previous_success_state():
@@ -179,14 +207,90 @@ def test_failed_widget_rerun_clears_the_previous_success_state():
     panel = graph.Graph("rerun", maybe_fail).widget(
         controls={"fail": [False, True]}
     )
-    diagram, controls, button, status, _ = panel.children
+    surface, button, status, _ = panel.children
     button.click()
-    assert "done" in diagram.value
+    assert "done" in _html_text(surface)
 
-    controls.children[0].value = True
+    fail_control = next(
+        item
+        for item in _walk_widgets(surface)
+        if isinstance(item, widgets.Dropdown) and item.description == "Fail"
+    )
+    fail_control.value = True
     button.click()
     assert "Could not run" in status.value
-    assert "done" not in diagram.value
+    assert "role='alert'" in status.value
+    assert "done" not in _html_text(surface)
+    assert button.disabled is False
+
+
+def test_widget_resets_previous_success_before_each_run():
+    pytest.importorskip("ipywidgets")
+    states_seen_during_run = []
+    surface = None
+
+    @graph.node(outputs="value")
+    def inspect_surface():
+        states_seen_during_run.append("done" in _html_text(surface))
+        return 1
+
+    panel = graph.Graph("fresh state", inspect_surface).widget()
+    surface, button, _, _ = panel.children
+
+    button.click()
+    button.click()
+
+    assert states_seen_during_run == [False, False]
+
+
+def test_widget_distinguishes_flow_outputs_from_unused_side_outputs():
+    @graph.node(outputs=("used", "unused"))
+    def source():
+        return {"used": 1, "unused": 2}
+
+    @graph.node(outputs="result")
+    def finish(used):
+        return used
+
+    surface = graph.Graph("labels", source, finish).widget().children[0]
+    text = _html_text(surface)
+
+    assert "no downstream connection" in text
+    assert "flow output" in text
+
+
+def test_widget_puts_scalar_value_controls_inside_node_cards():
+    widgets = pytest.importorskip("ipywidgets")
+
+    @graph.node(outputs="value")
+    def configure(enabled=True, count=2, threshold=0.5, label="all"):
+        return enabled, count, threshold, label
+
+    panel = graph.Graph("ports", configure).widget()
+    surface = panel.children[0]
+    descendants = list(_walk_widgets(surface))
+
+    assert any(isinstance(item, widgets.Checkbox) for item in descendants)
+    assert any(isinstance(item, widgets.IntText) for item in descendants)
+    assert any(isinstance(item, widgets.FloatText) for item in descendants)
+    assert any(isinstance(item, widgets.Text) for item in descendants)
+    assert "Hollow sockets are settings" in surface.children[0].value
+
+
+def test_diagram_exposes_accessible_semantic_port_metadata():
+    flow = _example_graph()
+    markup = flow._diagram_html()
+
+    assert "role='img'" in markup
+    assert "aria-label='example." in markup
+    assert "<title>example flow</title>" in markup
+    assert "data-endpoint='load.scale'" in markup
+    assert "data-direction='input'" in markup
+    assert "data-type='int'" in markup
+    assert "data-connected='false'" in markup
+    assert "data-source='load.data'" in markup
+    assert "data-target='select.data'" in markup
+    assert "max-width:100%" not in markup
 
 
 def test_graph_module_has_no_framework_or_scientific_runtime_dependency():

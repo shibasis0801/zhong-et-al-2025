@@ -23,9 +23,10 @@ def _html_text(widget):
 def _panel_parts(panel):
     toolbar, surface, output = panel.children
     button, status = toolbar.children
-    diagram = surface.children[1]
-    cards = surface.children[3].children
-    return surface, diagram, cards, button, status, output
+    scroller = surface.children[1]
+    canvas = scroller.children[0]
+    diagram, *controls = canvas.children
+    return surface, diagram, controls, button, status, output
 
 
 def _example_graph(calls=None):
@@ -249,21 +250,21 @@ def test_widget_combines_a_wired_map_with_native_controls_and_output():
     panel = flow.widget(controls={"scale": [1, 2, 3]}, show="summary")
 
     assert isinstance(panel, widgets.VBox)
-    surface, diagram, cards, button, status, output = _panel_parts(panel)
+    surface, diagram, overlay_controls, button, status, output = _panel_parts(panel)
     assert isinstance(surface, widgets.VBox)
     assert isinstance(diagram, widgets.HTML)
     assert "<svg" in diagram.value
     assert "data-source='load.data'" in diagram.value
     assert "data-target='select.data'" in diagram.value
-    assert len(cards) == 3
+    assert len(overlay_controls) == 2
     assert "<svg" in flow.diagram().value
-    controls = list(_walk_widgets(surface))
-    assert any(isinstance(item, widgets.Dropdown) for item in controls)
-    assert any(isinstance(item, widgets.IntText) for item in controls)
-    surface_text = _html_text(surface)
-    assert "← load.data" in surface_text
-    assert "→ select.data, summarize.data" in surface_text
-    assert "← select.selected" in surface_text
+    descendants = list(_walk_widgets(surface))
+    assert any(isinstance(item, widgets.Dropdown) for item in descendants)
+    assert any(isinstance(item, widgets.IntText) for item in descendants)
+    assert "Input controls and port details" not in _html_text(surface)
+    assert all(
+        control.layout.grid_area == "canvas" for control in overlay_controls
+    )
     assert isinstance(button, widgets.Button)
     assert isinstance(status, widgets.HTML)
     assert isinstance(output, widgets.Output)
@@ -273,7 +274,7 @@ def test_widget_combines_a_wired_map_with_native_controls_and_output():
     assert "done" in _html_text(surface)
     assert panel.last_run["summary"] == 6
     assert panel.last_error is None
-    assert "values below are this run" in diagram.value
+    assert "summary = 6 · result" in diagram.value
 
     scale = next(
         item
@@ -281,7 +282,8 @@ def test_widget_combines_a_wired_map_with_native_controls_and_output():
         if isinstance(item, widgets.Dropdown) and item.description == "Scale"
     )
     scale.value = 3
-    assert "scale = 3" in diagram.value
+    assert "Current input values: scale=3" in diagram.value
+    assert ">scale = 3<" not in diagram.value
     assert panel.last_run is None
     assert "Input values changed" in status.value
 
@@ -350,11 +352,11 @@ def test_widget_distinguishes_flow_outputs_from_unused_side_outputs():
     )
     text = _html_text(surface)
 
-    assert "unused output" in text
-    assert "result shown below" in text
+    assert "unused" in text
+    assert "result" in text
 
 
-def test_widget_puts_scalar_value_controls_inside_node_cards():
+def test_widget_puts_scalar_value_controls_inside_the_wired_canvas():
     widgets = pytest.importorskip("ipywidgets")
 
     @graph.node(outputs="value")
@@ -369,7 +371,7 @@ def test_widget_puts_scalar_value_controls_inside_node_cards():
     assert any(isinstance(item, widgets.IntText) for item in descendants)
     assert any(isinstance(item, widgets.FloatText) for item in descendants)
     assert any(isinstance(item, widgets.Text) for item in descendants)
-    assert "Hollow input sockets are editable" in surface.children[2].value
+    assert "Edit hollow input ports directly inside their nodes" in surface.children[0].value
     controls = [
         item
         for item in descendants
@@ -379,6 +381,24 @@ def test_widget_puts_scalar_value_controls_inside_node_cards():
         )
     ]
     assert all(item.layout.min_width in ("0", "0px") for item in controls)
+
+
+def test_widget_uses_one_shared_canvas_without_a_duplicate_card_strip():
+    widgets = pytest.importorskip("ipywidgets")
+    panel = _example_graph().widget(controls={"scale": [1, 2, 3]})
+    surface, diagram, controls, _, _, _ = _panel_parts(panel)
+    scroller = surface.children[1]
+    canvas = scroller.children[0]
+
+    assert isinstance(canvas, widgets.GridBox)
+    assert canvas.layout.grid_template_areas == '"canvas"'
+    assert diagram.layout.grid_area == "canvas"
+    assert scroller.layout.overflow == "auto hidden"
+    assert canvas.layout.overflow == "hidden"
+    assert len(controls) == 2
+    assert all(control.layout.grid_area == "canvas" for control in controls)
+    assert all(control.layout.min_width in ("0", "0px") for control in controls)
+    assert "Input controls and port details" not in _html_text(surface)
 
 
 def test_diagram_exposes_accessible_semantic_port_metadata():

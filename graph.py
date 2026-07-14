@@ -619,11 +619,71 @@ class Graph:
         text = Graph._value_summary(value)
         return text if len(text) <= 32 else text[:31] + "…"
 
+    def _diagram_geometry(self) -> dict[str, Any]:
+        """Return the one compact layout shared by SVG wires and UI controls."""
+
+        node_width = 256.0
+        header_height = 42.0
+        port_height = 30.0
+        column_gap = 88.0
+        row_gap = 28.0
+        margin = 18.0
+
+        description = self.describe()
+        rows = {row["name"]: row for row in description["nodes"]}
+        depth: dict[str, int] = {}
+        for current in self.nodes:  # producers are always declared earlier
+            sources = [
+                source_node
+                for (target_node, _), (source_node, _) in self._connections.items()
+                if target_node == current.name
+            ]
+            depth[current.name] = (
+                0 if not sources else 1 + max(depth[source] for source in sources)
+            )
+        max_depth = max(depth.values()) if depth else 0
+
+        columns: dict[int, list[str]] = {}
+        for current in self.nodes:
+            columns.setdefault(depth[current.name], []).append(current.name)
+
+        position: dict[str, tuple[float, float, float]] = {}
+        canvas_bottom = margin
+        for column in range(max_depth + 1):
+            x = margin + column * (node_width + column_gap)
+            y = margin
+            for name in columns.get(column, []):
+                row = rows[name]
+                body_rows = max(
+                    len(row["input_ports"]), len(row["output_ports"]), 1
+                )
+                height = header_height + body_rows * port_height + 14
+                position[name] = (x, y, height)
+                y += height + row_gap
+            canvas_bottom = max(canvas_bottom, y)
+
+        width = margin * 2 + (max_depth + 1) * node_width + max_depth * column_gap
+        height = canvas_bottom - row_gap + margin
+        return {
+            "description": description,
+            "rows": rows,
+            "position": position,
+            "node_width": node_width,
+            "header_height": header_height,
+            "port_height": port_height,
+            "margin": margin,
+            "width": width,
+            "height": height,
+        }
+
     def _diagram_html(
         self,
         run: Run | None = None,
         *,
         preview_settings: Mapping[str, Any] | None = None,
+        interactive_settings: Sequence[str] = (),
+        error: NodeError | None = None,
+        canvas_only: bool = False,
     ) -> str:
         """Render the flow as an SVG node canvas: ports, wires, and values.
 
@@ -633,17 +693,32 @@ class Graph:
         control values before a run; ``run`` shows the values and timings used.
         """
 
-        node_width = 256.0
-        header_height = 42.0
-        port_height = 26.0
-        column_gap = 88.0
-        row_gap = 28.0
-        margin = 18.0
+        geometry = self._diagram_geometry()
+        description = geometry["description"]
+        rows = geometry["rows"]
+        position = geometry["position"]
+        node_width = geometry["node_width"]
+        header_height = geometry["header_height"]
+        port_height = geometry["port_height"]
+        width = geometry["width"]
+        height = geometry["height"]
         port_radius = 5.0
+        interactive = set(interactive_settings)
 
-        description = self.describe()
-        rows = {row["name"]: row for row in description["nodes"]}
-        completed = set(run.order) if run is not None else set()
+        completed = (
+            set(run.order)
+            if run is not None
+            else set(error.completed)
+            if error is not None
+            else set()
+        )
+        timings = (
+            run.timings
+            if run is not None
+            else error.timings
+            if error is not None
+            else {}
+        )
         if run is not None:
             values: dict[str, Any] = dict(run.settings)
         elif preview_settings is not None:
@@ -651,37 +726,6 @@ class Graph:
         else:
             values = dict(self.setting_defaults)
         output_values = {} if run is None else dict(run.outputs)
-
-        depth: dict[str, int] = {}
-        for current in self.nodes:  # producers are always declared earlier
-            sources = [
-                source_node
-                for (target_node, _), (source_node, _) in self._connections.items()
-                if target_node == current.name
-            ]
-            depth[current.name] = 0 if not sources else 1 + max(depth[s] for s in sources)
-        max_depth = max(depth.values()) if depth else 0
-
-        columns: dict[int, list[str]] = {}
-        for current in self.nodes:
-            columns.setdefault(depth[current.name], []).append(current.name)
-
-        def node_height(row: Mapping[str, Any]) -> float:
-            body = max(len(row["input_ports"]), len(row["output_ports"]), 1)
-            return header_height + body * port_height + 14
-
-        position: dict[str, tuple[float, float, float]] = {}
-        canvas_bottom = margin
-        for column in range(max_depth + 1):
-            x = margin + column * (node_width + column_gap)
-            y = margin
-            for name in columns.get(column, []):
-                height = node_height(rows[name])
-                position[name] = (x, y, height)
-                y += height + row_gap
-            canvas_bottom = max(canvas_bottom, y)
-        width = margin * 2 + (max_depth + 1) * node_width + max_depth * column_gap
-        height = canvas_bottom - row_gap + margin
 
         def in_xy(name: str, index: int) -> tuple[float, float]:
             x, y, _ = position[name]
@@ -751,8 +795,10 @@ class Graph:
                 "text-anchor='middle' font-size='10' font-weight='700' "
                 f"fill='currentColor'>{order_number}</text>"
             )
-            if current.name in completed:
-                milliseconds = run.timings.get(current.name, 0.0) * 1000
+            if error is not None and current.name == error.node_name:
+                state, colour = "failed", "fill='#d84a4a'"
+            elif current.name in completed:
+                milliseconds = timings.get(current.name, 0.0) * 1000
                 state, colour = f"done · {milliseconds:.1f} ms", "fill='hsl(145,58%,46%)'"
             else:
                 state, colour = "ready", "fill='currentColor' fill-opacity='0.55'"
@@ -765,7 +811,9 @@ class Graph:
                 px, py = in_xy(current.name, index)
                 colour = self._type_colour(port_row["type"])
                 connected = port_row["connected"]
-                if connected:
+                if not connected and port in interactive:
+                    label = ""
+                elif connected:
                     label = port
                 else:
                     value = "required" if port_row["required"] and port not in values else self._format_setting_value(values.get(port))
@@ -778,9 +826,12 @@ class Graph:
                     f"data-connected='{str(connected).lower()}'>"
                     f"<title>{html.escape(port)} input · {html.escape(port_row['type'])}</title>"
                     "</circle>"
-                    f"<text x='{px + 9:.1f}' y='{py + 3.5:.1f}' font-size='11' "
-                    f"fill='currentColor' fill-opacity='0.88'>{html.escape(label)}</text>"
                 )
+                if label:
+                    parts.append(
+                        f"<text x='{px + 9:.1f}' y='{py + 3.5:.1f}' font-size='11' "
+                        f"fill='currentColor' fill-opacity='0.88'>{html.escape(label)}</text>"
+                    )
             for index, port_row in enumerate(row["output_ports"]):
                 port = port_row["name"]
                 px, py = out_xy(current.name, index)
@@ -809,7 +860,9 @@ class Graph:
                     f"{html.escape(label)}</text>"
                 )
 
-        if run is not None:
+        if error is not None:
+            caption = f"stopped at {error.node_name} · completed steps stay visible"
+        elif run is not None:
             caption = f"ran {len(completed)} node(s) in {run.seconds:.3f}s · values below are this run"
         else:
             caption = (
@@ -832,7 +885,7 @@ class Graph:
             f"<svg xmlns='http://www.w3.org/2000/svg' "
             f"viewBox='0 0 {width:.0f} {height:.0f}' width='{width:.0f}' "
             f"height='{height:.0f}' role='img' aria-label='{html.escape(accessible, quote=True)}' "
-            "style='height:auto;font-family:inherit'>"
+            "style='height:auto;font-family:inherit;display:block'>"
             f"<title>{html.escape(self.name)} flow</title>"
             f"<desc>{html.escape(accessible)}</desc>"
             "<style>.graph-wire:hover,.graph-wire:focus{stroke-width:4;outline:none}</style>"
@@ -840,6 +893,8 @@ class Graph:
             + "".join(parts)
             + "</svg>"
         )
+        if canvas_only:
+            return svg
         return (
             "<div style='margin:.25rem 0 .75rem'>"
             f"<div style='font-weight:600'>{html.escape(self.name)}</div>"
@@ -929,197 +984,95 @@ class Graph:
                 widgets, name, specification, default
             )
 
-        def _socket_markup(type_label: str, *, connected: bool) -> str:
-            colour = self._type_colour(type_label)
-            fill = colour if connected else "transparent"
-            return (
-                f"<span aria-hidden='true' style='display:inline-block;width:10px;"
-                f"height:10px;border:2px solid {colour};border-radius:50%;"
-                f"background:{fill};box-sizing:border-box'></span>"
+        interactive_names = tuple(control_widgets)
+        geometry = self._diagram_geometry()
+        width = geometry["width"]
+        height = geometry["height"]
+        diagram_view = widgets.HTML(
+            value=self._diagram_html(
+                preview_settings=self.setting_defaults,
+                interactive_settings=interactive_names,
+                canvas_only=True,
+            ),
+            layout=widgets.Layout(
+                grid_area="canvas",
+                width=f"{width:.0f}px",
+                min_width=f"{width:.0f}px",
+                height=f"{height:.0f}px",
+                overflow="hidden",
+            ),
+        )
+        overlay_controls = []
+        for name, control in control_widgets.items():
+            node_name, _ = self._settings[name]
+            port_rows = geometry["rows"][node_name]["input_ports"]
+            index = next(
+                index
+                for index, port_row in enumerate(port_rows)
+                if port_row["name"] == name
             )
-
-        def _socket(type_label: str, *, connected: bool):
-            return widgets.HTML(
-                value=_socket_markup(type_label, connected=connected),
-                layout=widgets.Layout(width="14px", min_width="14px"),
+            x, y, _ = geometry["position"][node_name]
+            output_on_row = index < len(
+                geometry["rows"][node_name]["output_ports"]
             )
-
-        def _row(*items: Any):
-            for item in items[1:]:
-                if hasattr(item, "layout"):
-                    item.layout.flex = "1 1 auto"
-                    item.layout.min_width = "0"
-                    item.layout.width = "auto"
-            return widgets.HBox(
-                list(items),
-                layout=widgets.Layout(
-                    width="100%", min_width="0", align_items="center",
-                    grid_gap="5px", overflow="visible"
-                ),
+            control_width = (
+                geometry["node_width"] * 0.56 - 14
+                if output_on_row
+                else geometry["node_width"] - 18
             )
-
-        targets: dict[tuple[str, str], list[str]] = {}
-        for (target_node, target_port), source in self._connections.items():
-            targets.setdefault(source, []).append(f"{target_node}.{target_port}")
-
-        node_states: dict[str, Any] = {}
-        output_labels: dict[tuple[str, str], Any] = {}
-
-        def _state_markup(
-            state: str, *, done: bool = False, failed: bool = False
-        ) -> str:
-            colour = "#b42318" if failed else "#218653" if done else "currentColor"
-            opacity = "1" if done or failed else ".7"
-            return (
-                f"<span style='color:{colour};opacity:{opacity};font-size:.76rem;"
-                "white-space:nowrap'>"
-                f"{html.escape(state)}</span>"
+            top = (
+                y
+                + geometry["header_height"]
+                + index * geometry["port_height"]
+                + 2
             )
+            left = x + 9
+            control.layout.grid_area = "canvas"
+            control.layout.align_self = "flex-start"
+            control.layout.flex = "0 0 auto"
+            control.layout.width = f"{control_width:.0f}px"
+            control.layout.min_width = "0"
+            control.layout.max_width = f"{control_width:.0f}px"
+            control.layout.height = f"{geometry['port_height'] - 4:.0f}px"
+            control.layout.margin = f"{top:.0f}px 0 0 {left:.0f}px"
+            overlay_controls.append(control)
 
-        def _output_markup(current: Node, port: str, value: Any = inspect.Parameter.empty) -> str:
-            type_label = self._output_type(current, port)
-            destination_rows = targets.get((current.name, port), [])
-            destination = (
-                "→ " + ", ".join(destination_rows)
-                if destination_rows
-                else (
-                    "result shown below"
-                    if show == port or (show is None and current is self.nodes[-1])
-                    else "unused output"
-                )
-            )
-            shown_value = ""
-            if value is not inspect.Parameter.empty:
-                shown_value = f" = {self._format_setting_value(value)}"
-            return (
-                "<div style='text-align:right;width:100%'>"
-                f"<span style='font-weight:500'>{html.escape(port + shown_value)}</span>"
-                f" <span style='opacity:.58;font-size:.76rem'>· {html.escape(type_label)}</span>"
-                f"<div style='opacity:.65;font-size:.76rem'>{html.escape(destination)}</div>"
-                "</div>"
-            )
-
-        node_cards = []
-        for order_number, current in enumerate(self.nodes, start=1):
-            state = widgets.HTML(
-                value=_state_markup("ready"),
-                layout=widgets.Layout(width="auto", min_width="58px"),
-            )
-            node_states[current.name] = state
-            documentation = inspect.getdoc(current.operation) or "Ordinary Python step."
-            summary = documentation.splitlines()[0]
-            title = widgets.HTML(
-                value=(
-                    "<div style='display:flex;gap:7px;align-items:flex-start'>"
-                    "<span style='display:inline-flex;align-items:center;justify-content:center;"
-                    "min-width:21px;height:21px;border-radius:50%;background:rgba(90,167,214,.18);"
-                    "border:1px solid rgba(90,167,214,.55);font-size:.72rem;font-weight:700'>"
-                    f"{order_number}</span><div style='font-weight:650'>"
-                    f"{html.escape(current.label)}"
-                    f"<div style='font-weight:400;opacity:.78;font-size:.76rem;margin-top:2px'>"
-                    f"{html.escape(summary)}</div>"
-                    f"<div style='font-weight:400;opacity:.55;font-size:.7rem;margin-top:2px'>"
-                    f"{html.escape(current.name)}</div></div></div>"
-                ),
-                layout=widgets.Layout(width="100%"),
-            )
-            rows: list[Any] = [
-                widgets.HBox(
-                    [title, state],
-                    layout=widgets.Layout(
-                        width="100%",
-                        align_items="flex-start",
-                        border_bottom="1px solid var(--jp-border-color2, #6b7280)",
-                        padding="2px 2px 7px 2px",
-                    ),
-                )
-            ]
-            for parameter in current.signature.parameters.values():
-                connection = self._connections.get((current.name, parameter.name))
-                type_label = self._input_type(current, parameter)
-                socket = _socket(type_label, connected=connection is not None)
-                if connection is not None:
-                    source = f"{connection[0]}.{connection[1]}"
-                    content = widgets.HTML(value=(
-                            f"<div><span style='font-weight:500'>"
-                            f"{html.escape(parameter.name)}</span>"
-                            f"<div style='opacity:.65;font-size:.78rem'>"
-                            f"← {html.escape(source)} · {html.escape(type_label)}</div></div>"
-                        ),
-                        layout=widgets.Layout(width="100%"),
-                    )
-                elif parameter.name in control_widgets:
-                    content = widgets.VBox(
-                        [
-                            control_widgets[parameter.name],
-                            widgets.HTML(
-                                value=(
-                                    "<div style='opacity:.58;font-size:.74rem;"
-                                    "text-align:right'>"
-                                    f"{html.escape(type_label)}</div>"
-                                )
-                            ),
-                        ],
-                        layout=widgets.Layout(width="100%", grid_gap="1px"),
-                    )
-                else:
-                    if parameter.default is inspect.Parameter.empty:
-                        value = "required at run()"
-                    else:
-                        value = self._format_setting_value(parameter.default)
-                    content = widgets.HTML(
-                        value=(
-                            f"<div><span style='font-weight:500'>"
-                            f"{html.escape(parameter.name)}</span>"
-                            f"<div style='opacity:.65;font-size:.78rem'>"
-                            f"{html.escape(value)} · {html.escape(type_label)}</div></div>"
-                        ),
-                        layout=widgets.Layout(width="100%"),
-                    )
-                rows.append(_row(socket, content))
-
-            rows.append(
+        canvas = widgets.GridBox(
+            [diagram_view, *overlay_controls],
+            layout=widgets.Layout(
+                grid_template_columns=f"{width:.0f}px",
+                grid_template_rows=f"{height:.0f}px",
+                grid_template_areas='"canvas"',
+                flex="0 0 auto",
+                width=f"{width:.0f}px",
+                min_width=f"{width:.0f}px",
+                height=f"{height:.0f}px",
+                overflow="hidden",
+            ),
+        )
+        canvas_scroll = widgets.Box(
+            [canvas],
+            layout=widgets.Layout(
+                width="100%", min_width="0", overflow="auto hidden",
+                padding="0 0 6px 0",
+            ),
+        )
+        surface = widgets.VBox(
+            [
                 widgets.HTML(
-                    value="<div style='border-top:1px solid currentColor;opacity:.22'></div>"
-                )
-            )
-            for port in current.outputs:
-                label = widgets.HTML(
-                    value=_output_markup(current, port),
-                    layout=widgets.Layout(width="100%"),
-                )
-                output_labels[(current.name, port)] = label
-                rows.append(
-                    widgets.HBox(
-                        [
-                            label,
-                            _socket(
-                                self._output_type(current, port),
-                                connected=bool(targets.get((current.name, port))),
-                            ),
-                        ],
-                        layout=widgets.Layout(
-                            width="100%",
-                            align_items="center",
-                            grid_gap="4px",
-                        ),
+                    value=(
+                        f"<div style='font-weight:700;font-size:1rem'>{html.escape(self.name)}</div>"
+                        "<div style='opacity:.78;font-size:.82rem;margin:.15rem 0 .4rem'>"
+                        "Edit hollow input ports directly inside their nodes, then run the flow. "
+                        "Filled sockets carry wired values; side-by-side branches remain "
+                        "deterministic and execute sequentially in numbered order."
+                        "</div>"
                     )
-                )
-
-            node_cards.append(
-                widgets.VBox(
-                    rows,
-                    layout=widgets.Layout(
-                        border="1px solid var(--jp-border-color2, #6b7280)",
-                        padding="8px",
-                        width="290px",
-                        min_width="290px",
-                        max_width="320px",
-                        grid_gap="5px",
-                    ),
-                )
-            )
-
+                ),
+                canvas_scroll,
+            ],
+            layout=widgets.Layout(width="100%", min_width="0", grid_gap="4px"),
+        )
         run_button = widgets.Button(
             description="Run flow",
             button_style="primary",
@@ -1129,44 +1082,6 @@ class Graph:
         )
         status = widgets.HTML(layout=widgets.Layout(flex="1 1 auto", min_width="0"))
         output = widgets.Output()
-        diagram_view = widgets.HTML(
-            value=self._diagram_html(preview_settings=self.setting_defaults),
-            layout=widgets.Layout(width="100%"),
-        )
-        card_strip = widgets.HBox(
-            node_cards,
-            layout=widgets.Layout(
-                flex_flow="row nowrap", align_items="stretch",
-                overflow="auto hidden", grid_gap="12px",
-                width="100%", padding="2px 0 8px 0",
-            ),
-        )
-        port_editor = widgets.VBox(
-            [
-                widgets.HTML(
-                    value=(
-                        f"<div style='font-weight:700;font-size:1rem'>{html.escape(self.name)}</div>"
-                        "<div style='opacity:.78;font-size:.82rem;margin:.15rem 0 .4rem'>"
-                        "The map shows real data wires. Inputs are left, outputs are right, "
-                        "and numbered steps always execute sequentially. Side-by-side boxes "
-                        "are independent branches, not simultaneous computation."
-                        "</div>"
-                    )
-                ),
-                diagram_view,
-                widgets.HTML(
-                    value=(
-                        "<div style='font-weight:650;margin:.15rem 0 .2rem'>Input controls and port details</div>"
-                        "<div style='opacity:.75;font-size:.78rem;margin-bottom:.3rem'>"
-                        "Hollow input sockets are editable. Filled sockets receive a wired value. "
-                        "A hollow output is an unused value or the displayed result."
-                        "</div>"
-                    )
-                ),
-                card_strip,
-            ],
-            layout=widgets.Layout(width="100%", min_width="0"),
-        )
 
         def _set_status(message: str, *, alert: bool = False) -> None:
             status.value = (
@@ -1183,7 +1098,7 @@ class Graph:
             ),
         )
         panel = widgets.VBox(
-            [toolbar, port_editor, output],
+            [toolbar, surface, output],
             layout=widgets.Layout(width="100%", min_width="0", grid_gap="6px"),
         )
         panel.last_run = None
@@ -1194,21 +1109,13 @@ class Graph:
                 name: control.value for name, control in control_widgets.items()
             }
 
-        def _reset_surface() -> None:
-            for state in node_states.values():
-                state.value = _state_markup("ready")
-            for current in self.nodes:
-                for port in current.outputs:
-                    output_labels[(current.name, port)].value = _output_markup(
-                        current, port
-                    )
-
         def _preview(_change: Any = None) -> None:
             try:
-                _reset_surface()
                 selected = _selected_settings()
                 diagram_view.value = self._diagram_html(
-                    preview_settings=selected
+                    preview_settings=selected,
+                    interactive_settings=interactive_names,
+                    canvas_only=True,
                 )
                 panel.last_run = None
                 panel.last_error = None
@@ -1223,25 +1130,21 @@ class Graph:
         def run_clicked(_: Any) -> None:
             selected = _selected_settings()
             run_button.disabled = True
-            _reset_surface()
-            diagram_view.value = self._diagram_html(preview_settings=selected)
+            diagram_view.value = self._diagram_html(
+                preview_settings=selected,
+                interactive_settings=interactive_names,
+                canvas_only=True,
+            )
             _set_status("Running…")
             try:
                 result = self.run(**selected)
                 panel.last_run = result
                 panel.last_error = None
-                for node_name in result.order:
-                    milliseconds = result.timings[node_name] * 1000
-                    node_states[node_name].value = _state_markup(
-                        f"done · {milliseconds:.1f} ms", done=True
-                    )
-                for current in self.nodes:
-                    for port in current.outputs:
-                        value = result.outputs.get(port, inspect.Parameter.empty)
-                        output_labels[(current.name, port)].value = _output_markup(
-                            current, port, value
-                        )
-                diagram_view.value = self._diagram_html(result)
+                diagram_view.value = self._diagram_html(
+                    result,
+                    interactive_settings=interactive_names,
+                    canvas_only=True,
+                )
                 with output:
                     output.clear_output(wait=True)
                     from IPython.display import display
@@ -1257,21 +1160,14 @@ class Graph:
                     f"{detail}"
                 )
             except Exception as error:
-                _reset_surface()
                 panel.last_run = None
                 panel.last_error = error
                 diagram_view.value = self._diagram_html(
-                    preview_settings=selected
+                    preview_settings=selected,
+                    interactive_settings=interactive_names,
+                    error=error if isinstance(error, NodeError) else None,
+                    canvas_only=True,
                 )
-                if isinstance(error, NodeError):
-                    for node_name in error.completed:
-                        milliseconds = error.timings.get(node_name, 0.0) * 1000
-                        node_states[node_name].value = _state_markup(
-                            f"done · {milliseconds:.1f} ms", done=True
-                        )
-                    node_states[error.node_name].value = _state_markup(
-                        "failed", failed=True
-                    )
                 output.clear_output(wait=True)
                 _set_status(
                     f"<b>Could not run:</b> {html.escape(str(error))}",

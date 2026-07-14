@@ -152,15 +152,20 @@ def test_graph_notebook_executes_quickly_with_real_compact_data(monkeypatch):
     assert namespace["baseline"]["quality"]["finite_population_fraction"] == 1.0
     assert namespace["baseline"]["summary"]["minimum_valid_trials_per_bin"] == 452
     panel = namespace["run_panel"]
-    toolbar, port_editor, _ = panel.children
+    toolbar, surface, _ = panel.children
     assert toolbar.children[0].description == "Run flow"
-    assert "<svg" in port_editor.children[1].value
-    assert "data-source='load_compact_recording.demo'" in port_editor.children[1].value
-    cards = port_editor.children[3].children
-    assert len(cards) == 5
+    scroller = surface.children[1]
+    canvas = scroller.children[0]
+    diagram = canvas.children[0]
+    controls = canvas.children[1:]
+    assert "<svg" in diagram.value
+    assert "data-source='load_compact_recording.demo'" in diagram.value
+    assert len(controls) == 4
+    assert all(control.layout.grid_area == "canvas" for control in controls)
+    assert "Input controls and port details" not in diagram.value
     descriptions = {
         widget.description
-        for widget in _walk_widgets(port_editor)
+        for widget in _walk_widgets(surface)
         if hasattr(widget, "description") and widget.description
     }
     assert descriptions == {
@@ -169,21 +174,9 @@ def test_graph_notebook_executes_quickly_with_real_compact_data(monkeypatch):
         "Published component",
         "Summary",
     }
-    card_text = [
-        " ".join(
-            widget.value
-            for widget in _walk_widgets(card)
-            if hasattr(widget, "value") and isinstance(widget.value, str)
-        )
-        for card in cards
-    ]
-    assert "← load_compact_recording.demo" in card_text[1]
-    assert "source provenance" in card_text[1]
-    assert "← load_compact_recording.demo" in card_text[2]
-    assert "← load_compact_recording.demo" in card_text[3]
-    assert "← check_recording.quality" in card_text[3]
-    assert "← select_trials.selection" in card_text[3]
-    assert "← summarize_position_profiles.summary" in card_text[4]
+    assert "data-source='check_recording.quality'" in diagram.value
+    assert "data-source='select_trials.selection'" in diagram.value
+    assert "data-source='summarize_position_profiles.summary'" in diagram.value
 
     median = namespace["experiment"].run(statistic="median")
     assert "across-trial median" in median["figure"].axes[0].get_ylabel()

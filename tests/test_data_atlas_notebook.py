@@ -39,6 +39,9 @@ def test_atlas_colab_setup_uses_the_shared_drive_only():
     assert "Zhong et al. 2025 - Neuromatch Team Workspace" in setup_source
     assert "Zhong2025_Janelia_v2" in setup_source
     assert "team_tools/packages" in setup_source
+    assert 'module_name == "zhong2025"' in setup_source
+    assert 'module_name.startswith("zhong2025.")' in setup_source
+    assert "importlib.invalidate_caches()" in setup_source
     source = _source(notebook).lower()
     assert "github" not in source
     assert "git clone" not in source

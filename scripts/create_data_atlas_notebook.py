@@ -73,6 +73,7 @@ clone anything or download the Janelia dataset.
             r"""
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 import subprocess
 import sys
@@ -123,6 +124,13 @@ if IN_COLAB:
         ],
         check=True,
     )
+    # pip replaces the files on disk, but a reused Colab runtime can still hold
+    # the previous package in memory. Remove only this helper package so the
+    # next import reads the wheel that was just installed.
+    for module_name in list(sys.modules):
+        if module_name == "zhong2025" or module_name.startswith("zhong2025."):
+            del sys.modules[module_name]
+    importlib.invalidate_caches()
     print(f"Shared data: {DATASET_ROOT} ({SHORTCUT_KIND})")
 else:
     candidates = [Path.cwd(), Path.cwd().parent, Path.cwd().parent.parent]

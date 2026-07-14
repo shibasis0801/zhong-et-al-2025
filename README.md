@@ -79,11 +79,19 @@ All upstream paper-reproduction notebooks and figure scripts live only in
 The `graph` module keeps repeated notebook analysis understandable without
 introducing a workflow platform. Ordinary Python functions are nodes, their
 arguments and declared returns are named ports, and matching names show the
-data flow. The notebook UI keeps each editable input inside its node, uses
-filled and hollow sockets to distinguish wired data from values, and shows each
-port's upstream source or downstream targets on the same card surface. After a
-run, the cards show completion timings and compact output previews. A run
-records its settings, intermediate outputs, execution order, and timings.
+data flow. The notebook UI combines a curved-wire flow map with native input
+controls inside the corresponding node cards. Filled and hollow sockets
+distinguish wired data, editable inputs, unused outputs, and the displayed
+result. After a run, the map and cards show completion timings and safe shape-
+aware previews. The resulting run remains available as `panel.last_run` and
+records settings, intermediate outputs, execution order, terminal branches,
+and timings.
+
+One output may feed several independent branches—for example, selection and
+data-quality checks can inspect the same loaded slice before rejoining. These
+branches are visual and logical, not concurrent: nodes execute one at a time in
+numbered declaration order for predictable Colab memory use and reproducible
+errors. Nodes should treat shared arrays and dictionaries as read-only.
 
 The module intentionally provides only:
 

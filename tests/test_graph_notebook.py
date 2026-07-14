@@ -76,6 +76,9 @@ def test_graph_colab_setup_uses_the_shared_drive_only():
     assert "Zhong et al. 2025 - Neuromatch Team Workspace" in setup.source
     assert "Zhong2025_Janelia_v2" in setup.source
     assert "team_tools/packages" in setup.source
+    assert "module_name == 'graph'" in setup.source
+    assert "module_name == 'zhong2025'" in setup.source
+    assert "importlib.invalidate_caches()" in setup.source
     source = _source(notebook).lower()
     assert "github" not in source
     assert "git clone" not in source
@@ -95,10 +98,18 @@ def test_graph_notebook_teaches_the_complete_small_surface():
         "Inspect a run instead of trusting hidden state",
         "Write another sequential flow",
         "Boundaries of this example",
-        "Hollow sockets",
+        "Hollow input",
         "Stimulus role",
         "Published component",
         "@graph.node(outputs=\"demo\")",
+        "@graph.node(outputs=\"quality\")",
+        "independent branches",
+        "run_panel.last_run",
+        "train/test split",
+        "read-only",
+        "Role 0 — familiar B exemplar",
+        "#@title Configure the visible ports",
+        "across-trial {summary['statistic']}",
         "experiment = graph.Graph(",
         "experiment.widget(",
         "experiment.run_many(",
@@ -133,14 +144,20 @@ def test_graph_notebook_executes_quickly_with_real_compact_data(monkeypatch):
     assert {row["position_bins"] for row in namespace["variation_table"]} == {18}
     assert namespace["baseline"].order == (
         "load_compact_recording",
+        "check_recording",
         "select_trials",
         "summarize_position_profiles",
     )
+    assert namespace["baseline"]["quality"]["zero_frame_trial_bins"] == 0
+    assert namespace["baseline"]["quality"]["finite_population_fraction"] == 1.0
+    assert namespace["baseline"]["summary"]["minimum_valid_trials_per_bin"] == 452
     panel = namespace["run_panel"]
-    assert panel.children[1].description == "Run flow"
-    port_editor = panel.children[0]
-    cards = port_editor.children[1].children
-    assert len(cards) == 4
+    toolbar, port_editor, _ = panel.children
+    assert toolbar.children[0].description == "Run flow"
+    assert "<svg" in port_editor.children[1].value
+    assert "data-source='load_compact_recording.demo'" in port_editor.children[1].value
+    cards = port_editor.children[3].children
+    assert len(cards) == 5
     descriptions = {
         widget.description
         for widget in _walk_widgets(port_editor)
@@ -161,9 +178,17 @@ def test_graph_notebook_executes_quickly_with_real_compact_data(monkeypatch):
         for card in cards
     ]
     assert "← load_compact_recording.demo" in card_text[1]
+    assert "source provenance" in card_text[1]
     assert "← load_compact_recording.demo" in card_text[2]
-    assert "← select_trials.selection" in card_text[2]
-    assert "← summarize_position_profiles.summary" in card_text[3]
+    assert "← load_compact_recording.demo" in card_text[3]
+    assert "← check_recording.quality" in card_text[3]
+    assert "← select_trials.selection" in card_text[3]
+    assert "← summarize_position_profiles.summary" in card_text[4]
+
+    median = namespace["experiment"].run(statistic="median")
+    assert "across-trial median" in median["figure"].axes[0].get_ylabel()
+    assert median["summary"]["zero_frame_trial_bins"] == 0
+    namespace["plt"].close(median["figure"])
 
 
 def test_wheel_configuration_includes_the_single_graph_module():

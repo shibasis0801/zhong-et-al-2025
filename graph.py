@@ -985,12 +985,15 @@ class Graph:
             )
 
         interactive_names = tuple(control_widgets)
+        initial_settings = {
+            name: control.value for name, control in control_widgets.items()
+        }
         geometry = self._diagram_geometry()
         width = geometry["width"]
         height = geometry["height"]
         diagram_view = widgets.HTML(
             value=self._diagram_html(
-                preview_settings=self.setting_defaults,
+                preview_settings=initial_settings,
                 interactive_settings=interactive_names,
                 canvas_only=True,
             ),

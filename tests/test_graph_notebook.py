@@ -160,6 +160,7 @@ def test_graph_notebook_executes_quickly_with_real_compact_data(monkeypatch):
     controls = canvas.children[1:]
     assert "<svg" in diagram.value
     assert "data-source='load_compact_recording.demo'" in diagram.value
+    assert "Current input values: stimulus_id=all" in diagram.value
     assert len(controls) == 4
     assert all(control.layout.grid_area == "canvas" for control in controls)
     assert "Input controls and port details" not in diagram.value

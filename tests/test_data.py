@@ -3,7 +3,9 @@ import numpy as np
 import pytest
 
 from zhong2025.data import (
+    FIGSHARE_ARTICLE_API_URL,
     download_file,
+    fetch_figshare_article,
     load_atlas_demo,
     profile_summary,
 )
@@ -36,6 +38,51 @@ class FakeSession:
     def get(self, url, stream, timeout):
         self.calls.append((url, stream, timeout))
         return self.response
+
+
+class FakeArticleResponse:
+    def __init__(self, payload):
+        self.payload = payload
+        self.closed = False
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self.payload
+
+    def close(self):
+        self.closed = True
+
+
+class FakeArticleSession:
+    def __init__(self, payload):
+        self.response = FakeArticleResponse(payload)
+        self.calls = []
+
+    def get(self, url, timeout):
+        self.calls.append((url, timeout))
+        return self.response
+
+
+def test_figshare_article_api_is_returned_as_a_dictionary():
+    session = FakeArticleSession(
+        {"id": 28811129, "title": "Unsupervised pretraining", "files": []}
+    )
+
+    article = fetch_figshare_article(session=session)
+
+    assert isinstance(article, dict)
+    assert article["id"] == 28811129
+    assert session.calls == [(FIGSHARE_ARTICLE_API_URL, (10.0, 60.0))]
+    assert session.response.closed
+
+
+def test_figshare_article_api_rejects_an_unexpected_response():
+    with pytest.raises(ValueError, match="JSON object"):
+        fetch_figshare_article(session=FakeArticleSession([]))
+    with pytest.raises(ValueError, match="unexpected article"):
+        fetch_figshare_article(session=FakeArticleSession({"id": 1}))
 
 
 def test_streamed_download_verifies_and_atomically_renames(tmp_path):

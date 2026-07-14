@@ -11,7 +11,14 @@ from .atlas import (
     load_file_inventory,
     recording_bundle,
 )
-from .data import download_profile, load_atlas_demo, load_manifest, profile_summary
+from .data import (
+    FIGSHARE_ARTICLE_API_URL,
+    download_profile,
+    fetch_figshare_article,
+    load_atlas_demo,
+    load_manifest,
+    profile_summary,
+)
 
 __all__ = [
     "download_profile",
@@ -19,6 +26,8 @@ __all__ = [
     "experiment_rows",
     "experiment_semantics",
     "filter_inventory",
+    "FIGSHARE_ARTICLE_API_URL",
+    "fetch_figshare_article",
     "format_bytes",
     "inventory_summary",
     "load_atlas_demo",

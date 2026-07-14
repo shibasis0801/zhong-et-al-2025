@@ -32,6 +32,16 @@ def test_drive_config_contains_only_public_ids_and_small_safety_policy():
     assert config["incoming_extensions"] == [".ipynb"]
     assert config["incoming_max_files"] == 50
     assert config["current_max_delete"] < 39
+    assert config["team_notebooks"] == [
+        {
+            "source": "notebooks/zhong2025_data_atlas_colab.ipynb",
+            "destination": "01_understand_the_dataset_colab.ipynb",
+        },
+        {
+            "source": "notebooks/zhong2025_graph_experiments_colab.ipynb",
+            "destination": "02_graph_experiments_colab.ipynb",
+        },
+    ]
     assert config["new_file_patterns"] == ["notebooks/team_changes/*.ipynb"]
     serialized = json.dumps(config).lower()
     for secret_field in ("access_token", "refresh_token", "client_secret"):
@@ -202,6 +212,33 @@ def test_nonempty_current_requires_repository_manifest(monkeypatch):
     )
     with pytest.raises(drive_sync.SyncError, match="not an initialized mirror"):
         drive_sync.verify_current(config, "gdrive", "HEAD")
+
+
+def test_team_notebooks_publish_at_the_workspace_root(tmp_path, monkeypatch):
+    config = drive_sync.load_config()
+    for publication in config["team_notebooks"]:
+        source = tmp_path / publication["source"]
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text("notebook")
+    calls = []
+
+    monkeypatch.setattr(drive_sync, "rclone_binary", lambda: "rclone")
+    monkeypatch.setattr(
+        drive_sync,
+        "command",
+        lambda arguments, **_kwargs: calls.append(arguments),
+    )
+
+    drive_sync.publish_team_notebooks(
+        tmp_path, config, remote="gdrive", apply=True
+    )
+
+    assert [call[1] for call in calls] == ["copyto", "copyto"]
+    assert [call[3] for call in calls] == [
+        "gdrive:01_understand_the_dataset_colab.ipynb",
+        "gdrive:02_graph_experiments_colab.ipynb",
+    ]
+    assert all(config["root_folder_id"] in call for call in calls)
 
 
 def test_pull_previews_then_imports_and_clears_inbox(tmp_path, monkeypatch, capsys):

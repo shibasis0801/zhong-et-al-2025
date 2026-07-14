@@ -18,6 +18,7 @@ from urllib3.util.retry import Retry
 ASSET_ROOT = Path(__file__).resolve().parent / "assets"
 DEFAULT_MANIFEST = ASSET_ROOT / "figshare-v2-curated.json"
 DEFAULT_DEMO = ASSET_ROOT / "tx119_atlas_demo.npz"
+FIGSHARE_ARTICLE_API_URL = "https://api.figshare.com/v2/articles/28811129"
 MAX_PROFILE_BYTES = 2_000_000_000
 ALLOWED_KINDS = {
     "behavior",
@@ -88,6 +89,36 @@ def _retrying_session() -> requests.Session:
     session = requests.Session()
     session.mount("https://", HTTPAdapter(max_retries=retry))
     return session
+
+
+def fetch_figshare_article(
+    *,
+    session: requests.Session | None = None,
+    timeout: tuple[float, float] = (10.0, 60.0),
+) -> dict[str, Any]:
+    """Return the public Figshare article API response as a dictionary.
+
+    The endpoint is public and requires no access token. The bundled manifests
+    remain the reproducible source for analysis; this helper is for inspecting
+    the current article metadata exposed by Figshare.
+    """
+
+    client = _retrying_session() if session is None else session
+    response = None
+    try:
+        response = client.get(FIGSHARE_ARTICLE_API_URL, timeout=timeout)
+        response.raise_for_status()
+        article = response.json()
+    finally:
+        if response is not None:
+            response.close()
+        if session is None:
+            client.close()
+    if not isinstance(article, dict):
+        raise ValueError("Figshare article API did not return a JSON object")
+    if article.get("id") != 28811129:
+        raise ValueError("Figshare article API returned an unexpected article")
+    return dict(article)
 
 
 def download_file(

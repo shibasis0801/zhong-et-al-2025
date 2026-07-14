@@ -10,6 +10,16 @@
   "incoming_max_total_bytes": 209715200,
   "incoming_max_files": 50,
   "current_max_delete": 10,
+  "team_notebooks": [
+    {
+      "source": "notebooks/zhong2025_data_atlas_colab.ipynb",
+      "destination": "01_understand_the_dataset_colab.ipynb"
+    },
+    {
+      "source": "notebooks/zhong2025_graph_experiments_colab.ipynb",
+      "destination": "02_graph_experiments_colab.ipynb"
+    }
+  ],
   "incoming_extensions": [
     ".ipynb"
   ],

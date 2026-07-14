@@ -19,17 +19,28 @@ teammates. No one person is expected to supply every kind of expertise.
 
 1. In Google Drive, add **Zhong et al. 2025 - Neuromatch Team Workspace** as a
    shortcut in **My Drive**. Do not make a copy.
-2. Open `team_tools/01_understand_the_dataset_colab.ipynb` and choose
+2. Open `01_understand_the_dataset_colab.ipynb` in the workspace root and choose
    **Runtime → Run all**. A CPU runtime is enough.
 3. Work through the inventory, experiment timeline, join rules, schemas, and
    compact real-data example together.
-4. Open `team_tools/02_graph_experiments_colab.ipynb` to see the same small
+4. Open `02_graph_experiments_colab.ipynb` in the workspace root to see the same small
    recording as a visible, rerunnable flow.
 5. Record the team's eventual question and decisions in the private shared
    workspace, after everyone has the same data model.
 
 The default run downloads no published data. It uses a bundled, pickle-free
 catalog of the complete Figshare v2 release and a 2.9 MB real-data example.
+
+The public Figshare article metadata is also available as a normal dictionary:
+
+```python
+from zhong2025 import fetch_figshare_article
+
+figshare_api = fetch_figshare_article()
+```
+
+This reads `https://api.figshare.com/v2/articles/28811129` without credentials.
+The pinned local catalog remains the reproducible source for analysis.
 
 ## What the atlas covers
 

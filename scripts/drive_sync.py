@@ -43,6 +43,7 @@ def load_config(path: Path = CONFIG_PATH) -> dict[str, Any]:
         "incoming_max_total_bytes",
         "incoming_max_files",
         "current_max_delete",
+        "team_notebooks",
         "incoming_extensions",
         "new_file_patterns",
         "deny_pull_patterns",
@@ -327,8 +328,54 @@ def push(config: Mapping[str, Any], *, commit: str, remote: str, apply: bool) ->
             f"{len(manifest['files'])} tracked files from {manifest['commit'][:12]}"
         )
         command(arguments, capture=False)
+        publish_team_notebooks(snapshot, config, remote=remote, apply=apply)
         if not apply:
             print("Preview only. Add --apply to update Drive.")
+
+
+def publish_team_notebooks(
+    snapshot: Path,
+    config: Mapping[str, Any],
+    *,
+    remote: str,
+    apply: bool,
+) -> None:
+    """Publish the two committed team notebooks at the workspace root."""
+
+    publications = config.get("team_notebooks")
+    if not isinstance(publications, list) or not publications:
+        raise SyncError("drive-sync.json must declare team_notebooks")
+    for publication in publications:
+        if not isinstance(publication, dict):
+            raise SyncError("team_notebooks entries must be objects")
+        source = PurePosixPath(str(publication.get("source", "")))
+        destination = PurePosixPath(str(publication.get("destination", "")))
+        if (
+            source.is_absolute()
+            or ".." in source.parts
+            or source.suffix != ".ipynb"
+            or len(destination.parts) != 1
+            or destination.suffix != ".ipynb"
+        ):
+            raise SyncError("team_notebooks contains an unsafe notebook path")
+        local = snapshot.joinpath(*source.parts)
+        if not local.is_file():
+            raise SyncError(f"committed notebook is missing: {source}")
+        arguments = [
+            rclone_binary(),
+            "copyto",
+            str(local),
+            f"{remote}:{destination.as_posix()}",
+            *drive_flags(str(config["root_folder_id"])),
+            "--checksum",
+        ]
+        if not apply:
+            arguments.append("--dry-run")
+        command(arguments, capture=False)
+        print(
+            f"{'Published' if apply else 'Previewed'} team notebook: "
+            f"{destination}"
+        )
 
 
 def _matches(path: PurePosixPath, patterns: Iterable[str]) -> bool:

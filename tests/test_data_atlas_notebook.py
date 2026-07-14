@@ -97,6 +97,8 @@ def test_atlas_executes_default_path_quickly(monkeypatch):
 
     assert elapsed < 30
     assert namespace["article"]["file_count"] == 297
+    assert isinstance(namespace["figshare_api"], dict)
+    assert namespace["FETCH_LIVE_FIGSHARE_API"] is False
     assert namespace["experiment_index"]["summary"]["unique_recordings"] == 89
     assert namespace["population"].shape == (452, 18, 48)
     assert namespace["SELECTED_EXPERIMENT"] == ""

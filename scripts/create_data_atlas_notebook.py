@@ -65,8 +65,8 @@ folder itself as **`Zhong2025_Janelia_v2`**, that works too. You need only one
 shortcut, and you should not make a copy.
 
 The next cell mounts Drive once and loads the small, versioned helper bundle
-stored beside the team notebooks. It does not clone anything or download the
-Janelia dataset.
+stored under the shared dataset's `team_tools/packages/` folder. It does not
+clone anything or download the Janelia dataset.
 """
         ),
         code(
@@ -151,6 +151,7 @@ from zhong2025 import (
     experiment_recordings,
     experiment_rows,
     experiment_semantics,
+    fetch_figshare_article,
     filter_inventory,
     format_bytes,
     inventory_summary,
@@ -202,6 +203,31 @@ print(
     f"Loaded the complete v{article['version']} catalog and "
     f"compact session {demo['metadata']['session']} without network data access."
 )
+"""
+        ),
+        markdown(
+            r"""
+### 0.1 The Figshare API as a Python dictionary
+
+`fetch_figshare_article()` reads the public endpoint
+`https://api.figshare.com/v2/articles/28811129` and returns its JSON object as
+an ordinary Python `dict`; it needs no token. The default below remains offline
+and uses the pinned article summary. Set the flag to `True` whenever you want
+the complete live API response, including its `files` list.
+"""
+        ),
+        code(
+            r"""
+FETCH_LIVE_FIGSHARE_API = False
+
+figshare_api = (
+    fetch_figshare_article()
+    if FETCH_LIVE_FIGSHARE_API
+    else dict(article)
+)
+print(f"figshare_api is a {type(figshare_api).__name__} with {len(figshare_api)} keys.")
+if not FETCH_LIVE_FIGSHARE_API:
+    print("Set FETCH_LIVE_FIGSHARE_API = True for the complete live API dictionary.")
 """
         ),
         markdown(

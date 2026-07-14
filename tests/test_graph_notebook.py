@@ -174,6 +174,12 @@ def test_graph_notebook_executes_quickly_with_real_compact_data(monkeypatch):
         "Published component",
         "Summary",
     }
+    stimulus_control = next(
+        widget
+        for widget in _walk_widgets(surface)
+        if getattr(widget, "description", "") == "Stimulus role"
+    )
+    assert stimulus_control.value == "all"
     assert "data-source='check_recording.quality'" in diagram.value
     assert "data-source='select_trials.selection'" in diagram.value
     assert "data-source='summarize_position_profiles.summary'" in diagram.value

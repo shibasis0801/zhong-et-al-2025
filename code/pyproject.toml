@@ -30,10 +30,19 @@ dev = [
 ]
 
 [tool.setuptools]
-py-modules = ["database", "dprime", "drive", "graph", "position", "sql"]
+py-modules = [
+  "arrays",
+  "catalog",
+  "database",
+  "drive",
+  "position",
+  "release",
+  "sql",
+  "warehouse",
+]
 
 [tool.setuptools.packages.find]
-include = ["metadata"]
+include = ["dprime", "graph", "metadata"]
 
 [tool.setuptools.package-data]
 metadata = ["*.json"]
@@ -44,5 +53,16 @@ testpaths = ["tests"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["database.py", "dprime.py", "drive.py", "graph.py", "position.py", "sql.py"]
+files = [
+  "arrays.py",
+  "catalog.py",
+  "database.py",
+  "drive.py",
+  "dprime",
+  "graph",
+  "position.py",
+  "release.py",
+  "sql.py",
+  "warehouse.py",
+]
 ignore_missing_imports = true

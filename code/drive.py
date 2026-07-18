@@ -1,19 +1,15 @@
-"""Filesystem access and one-call setup for the Zhong et al. dataset."""
-
 from __future__ import annotations
 
-import csv
 import hashlib
 import importlib
 import importlib.util
-import json
 import os
 from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 import numpy as np
 
@@ -34,14 +30,7 @@ EXPERIMENT_INDEX_SNAPSHOT = METADATA_ROOT / "imaging-experiment-index.json"
 
 
 class DriveDataError(RuntimeError):
-    """Raised when release files cannot be accessed safely."""
-
-
-def is_colab() -> bool:
-    try:
-        return importlib.util.find_spec("google.colab") is not None
-    except ModuleNotFoundError:
-        return False
+    pass
 
 
 def setup(
@@ -52,17 +41,11 @@ def setup(
     mount: bool = True,
     report: bool = False,
 ) -> Any:
-    """Prepare Colab and return the dataset's Pandas/SQL interface."""
+    prepare_colab(mount)
+    install_dependencies()
+    expose_code_folder()
+    reload_workspace_modules()
 
-    if mount and is_colab():
-        _mount_colab_drive()
-    _install_catalog_dependencies()
-    code = Path(__file__).resolve().parent
-    if str(code) not in sys.path:
-        sys.path.insert(0, str(code))
-    importlib.invalidate_caches()
-    for name in ("database", "sql"):
-        sys.modules.pop(name, None)
     sql = importlib.import_module("sql")
     return sql.setup(
         root=root,
@@ -79,127 +62,20 @@ def locate_release(
     cache: str | Path | None = None,
     mount: bool = True,
 ) -> tuple[Path | None, Path]:
-    """Return the mounted release root (if available) and local file cache."""
+    cache_path = local_cache(cache)
+    explicit_root = root or os.environ.get("ZHONGDB_DATASET_ROOT")
 
-    cache_path = (
-        Path(cache) if cache is not None else Path(tempfile.gettempdir()) / "zhongdb-cache"
-    ).resolve()
-    explicit = root or os.environ.get("ZHONGDB_DATASET_ROOT")
-    if explicit is not None:
-        dataset_root = Path(explicit)
+    if explicit_root is not None:
+        dataset_root = Path(explicit_root)
     elif not is_colab():
         return None, cache_path
     else:
-        if mount:
-            _mount_colab_drive()
-        dataset_root = _discover_root()
+        prepare_colab(mount)
+        dataset_root = discover_release()
 
     if not dataset_root.is_dir():
         raise DriveDataError(f"Dataset root does not exist: {dataset_root}")
     return dataset_root.resolve(), cache_path
-
-
-def read_release(root: str | Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Read and validate the release marker and its complete file catalog."""
-
-    root = Path(root)
-    try:
-        status = _read_json(root / "TRANSFER_STATUS.json")
-        release = _read_json(root / "metadata/RELEASE.json")
-        with (root / "metadata/catalog.csv").open(newline="", encoding="utf-8") as stream:
-            files = [_catalog_row(row) for row in csv.DictReader(stream)]
-    except (FileNotFoundError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-        raise DriveDataError(f"Shared dataset metadata is incomplete: {error}") from error
-
-    expected_release = {
-        "article_id": ARTICLE_ID,
-        "version": ARTICLE_VERSION,
-        "file_count": EXPECTED_FILE_COUNT,
-        "total_bytes": EXPECTED_TOTAL_BYTES,
-    }
-    expected_status = {
-        "state": "complete",
-        "expected_files": EXPECTED_FILE_COUNT,
-        "verified_files": EXPECTED_FILE_COUNT,
-        "expected_bytes": EXPECTED_TOTAL_BYTES,
-        "verified_bytes": EXPECTED_TOTAL_BYTES,
-    }
-    for actual, expected, label in (
-        (release, expected_release, "release metadata"),
-        (status, expected_status, "transfer status"),
-    ):
-        for key, value in expected.items():
-            if actual.get(key) != value:
-                raise DriveDataError(f"Unexpected {label} field {key!r}")
-
-    _validate_catalog(files)
-    return release, files
-
-
-def read_snapshot() -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Read the bundled metadata-only snapshot of the pinned release."""
-
-    try:
-        inventory = _read_json(INVENTORY_SNAPSHOT)
-        article = inventory["article"]
-        files = [
-            _catalog_row(
-                {
-                    **row,
-                    "relative_path": row.get("relative_path", f"data/{row['name']}"),
-                }
-            )
-            for row in inventory["files"]
-        ]
-        release = {
-            "article_id": int(article["id"]),
-            "version": int(article["version"]),
-            "file_count": int(article["file_count"]),
-            "total_bytes": int(article["total_size_bytes"]),
-            "doi": str(article["doi"]),
-            "title": str(article["title"]),
-        }
-    except (FileNotFoundError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-        raise DriveDataError(f"Bundled release metadata is incomplete: {error}") from error
-
-    expected = {
-        "article_id": ARTICLE_ID,
-        "version": ARTICLE_VERSION,
-        "file_count": EXPECTED_FILE_COUNT,
-        "total_bytes": EXPECTED_TOTAL_BYTES,
-    }
-    for key, value in expected.items():
-        if release[key] != value:
-            raise DriveDataError(f"Unexpected snapshot field {key!r}")
-    _validate_catalog(files)
-    return release, files
-
-
-def read_experiment_index() -> Mapping[str, Any]:
-    """Read the bundled JSON projection of Imaging_Exp_info.npy."""
-
-    try:
-        index = _read_json(EXPERIMENT_INDEX_SNAPSHOT)
-        source = index["source"]
-        summary = index["summary"]
-        experiments = index["experiments"]
-    except (FileNotFoundError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-        raise DriveDataError(f"Bundled imaging index is incomplete: {error}") from error
-
-    expected = {
-        "article_id": ARTICLE_ID,
-        "article_version": ARTICLE_VERSION,
-    }
-    for key, value in expected.items():
-        if source.get(key) != value:
-            raise DriveDataError(f"Unexpected imaging-index source field {key!r}")
-    if summary.get("unique_recordings") != EXPECTED_IMAGING_RECORDINGS:
-        raise DriveDataError("Imaging index should describe 89 recordings")
-    if summary.get("unique_mice") != EXPECTED_IMAGING_MICE:
-        raise DriveDataError("Imaging index should describe 19 mice")
-    if not isinstance(experiments, Mapping):
-        raise DriveDataError("Imaging index experiments must be a mapping")
-    return experiments
 
 
 def fetch_file(
@@ -209,60 +85,16 @@ def fetch_file(
     cache: str | Path,
     max_gib: float = DEFAULT_MAX_GIB,
 ) -> Path:
-    """Copy one catalog-selected file locally and verify its size and MD5."""
+    selection = selected_file(row, max_gib)
+    source = source_path(root, selection)
+    destination = cache_path(cache, selection["name"])
 
-    if root is None:
-        raise DriveDataError("Fetching requires a mounted or explicit dataset root")
-    if not isinstance(max_gib, (int, float)) or max_gib <= 0:
-        raise ValueError("max_gib must be positive")
+    if verified_file(destination, selection):
+        return destination
 
-    name = _filename(row)
-    size = int(row["size_bytes"])
-    md5 = str(row["md5"]).lower()
-    if size > int(float(max_gib) * 2**30):
-        raise DriveDataError(
-            f"{name} is {size / 2**30:.2f} GiB; increase max_gib only after "
-            "checking the available disk and memory"
-        )
-
-    root = Path(root).resolve()
-    relative = _safe_relative_path(str(row["relative_path"]))
-    source = root.joinpath(*relative.parts).resolve()
-    if source != root and root not in source.parents:
-        raise DriveDataError(f"Catalog path escapes the dataset root: {name}")
-
-    cache = Path(cache).resolve()
-    cache.mkdir(parents=True, exist_ok=True)
-    destination = cache / name
-    if destination.is_file():
-        if destination.stat().st_size == size and _md5(destination) == md5:
-            return destination
-        destination.unlink()
-
-    if not source.is_file():
-        raise DriveDataError(f"Selected Drive file is unavailable: {source}")
-    if source.stat().st_size != size:
-        raise DriveDataError(f"Drive file size does not match the catalog: {name}")
-    if shutil.disk_usage(cache).free < size * 1.2:
-        raise DriveDataError("Not enough local disk space for the selected file")
-
-    partial = destination.with_suffix(destination.suffix + ".partial")
-    partial.unlink(missing_ok=True)
-    digest = hashlib.md5()
-    copied = 0
-    try:
-        with source.open("rb") as src, partial.open("wb") as dst:
-            while block := src.read(8 * 2**20):
-                dst.write(block)
-                digest.update(block)
-                copied += len(block)
-        if copied != size or digest.hexdigest() != md5:
-            raise DriveDataError(f"Copied file did not match the release catalog: {name}")
-        os.replace(partial, destination)
-    except BaseException:
-        partial.unlink(missing_ok=True)
-        raise
-    return destination
+    discard(destination)
+    validate_source(source, selection, destination.parent)
+    return copy_verified(source, destination, selection)
 
 
 def load_numpy(
@@ -273,25 +105,206 @@ def load_numpy(
     max_gib: float = DEFAULT_MAX_GIB,
     allow_pickle: bool = False,
 ) -> Any:
-    """Fetch and open one catalog-selected ``.npy`` or ``.npz`` file."""
-
     path = fetch_file(row, root=root, cache=cache, max_gib=max_gib)
-    name = _filename(row)
+    name = catalog_filename(row)
+
     try:
         if path.suffix.lower() == ".npz":
             with np.load(path, allow_pickle=allow_pickle) as archive:
                 return {key: archive[key] for key in archive.files}
         if path.suffix.lower() == ".npy":
-            loaded = np.load(path, allow_pickle=allow_pickle)
-            return loaded.item() if loaded.shape == () else loaded
+            value = np.load(path, allow_pickle=allow_pickle)
+            return value.item() if value.shape == () else value
     except ModuleNotFoundError as error:
         raise DriveDataError(f"{name} needs a missing scientific Python package") from error
     except (OSError, ValueError, TypeError) as error:
         raise DriveDataError(f"Could not load {name}: {error}") from error
+
     raise DriveDataError(f"Unsupported published file type: {name}")
 
 
-def _install_catalog_dependencies() -> None:
+def selected_file(row: Mapping[str, Any], max_gib: float) -> dict[str, Any]:
+    if not isinstance(max_gib, (int, float)) or max_gib <= 0:
+        raise ValueError("max_gib must be positive")
+
+    name = catalog_filename(row)
+    size = int(row["size_bytes"])
+    if size > int(float(max_gib) * 2**30):
+        raise DriveDataError(
+            f"{name} is {size / 2**30:.2f} GiB; increase max_gib only after "
+            "checking the available disk and memory"
+        )
+    return {
+        "name": name,
+        "relative_path": catalog_path(str(row["relative_path"])),
+        "size": size,
+        "md5": str(row["md5"]).lower(),
+    }
+
+
+def source_path(
+    root: str | Path | None,
+    selection: Mapping[str, Any],
+) -> Path:
+    if root is None:
+        raise DriveDataError("Fetching requires a mounted or explicit dataset root")
+
+    dataset_root = Path(root).resolve()
+    source = dataset_root.joinpath(*selection["relative_path"].parts).resolve()
+    if source != dataset_root and dataset_root not in source.parents:
+        raise DriveDataError(
+            f"Catalog path escapes the dataset root: {selection['name']}"
+        )
+    return source
+
+
+def cache_path(cache: str | Path, name: str) -> Path:
+    folder = Path(cache).resolve()
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder / name
+
+
+def verified_file(path: Path, selection: Mapping[str, Any]) -> bool:
+    return (
+        path.is_file()
+        and path.stat().st_size == selection["size"]
+        and file_md5(path) == selection["md5"]
+    )
+
+
+def validate_source(
+    source: Path,
+    selection: Mapping[str, Any],
+    cache: Path,
+) -> None:
+    if not source.is_file():
+        raise DriveDataError(f"Selected Drive file is unavailable: {source}")
+    if source.stat().st_size != selection["size"]:
+        raise DriveDataError(
+            f"Drive file size does not match the catalog: {selection['name']}"
+        )
+    if shutil.disk_usage(cache).free < selection["size"] * 1.2:
+        raise DriveDataError("Not enough local disk space for the selected file")
+
+
+def copy_verified(
+    source: Path,
+    destination: Path,
+    selection: Mapping[str, Any],
+) -> Path:
+    partial = destination.with_suffix(destination.suffix + ".partial")
+    discard(partial)
+    digest = hashlib.md5()
+    copied = 0
+
+    try:
+        with source.open("rb") as input_stream, partial.open("wb") as output_stream:
+            while block := input_stream.read(8 * 2**20):
+                output_stream.write(block)
+                digest.update(block)
+                copied += len(block)
+        if copied != selection["size"] or digest.hexdigest() != selection["md5"]:
+            raise DriveDataError(
+                f"Copied file did not match the release catalog: {selection['name']}"
+            )
+        partial.replace(destination)
+    except BaseException:
+        discard(partial)
+        raise
+
+    return destination
+
+
+def atomic_copy(source: str | Path, destination: str | Path) -> Path:
+    source_path = Path(source).resolve()
+    target = Path(destination).expanduser().resolve()
+    if target == source_path:
+        return target
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    partial = target.with_name(f".{target.name}.partial")
+    discard(partial)
+    try:
+        shutil.copy2(source_path, partial)
+        partial.replace(target)
+    except BaseException:
+        discard(partial)
+        raise
+    return target
+
+
+def catalog_filename(row: Mapping[str, Any]) -> str:
+    value = row.get("filename", row.get("name"))
+    if value is None or Path(str(value)).name != str(value):
+        raise DriveDataError("Choose an exact catalog filename, not a path")
+    return str(value)
+
+
+def catalog_path(value: str) -> PurePosixPath:
+    relative = PurePosixPath(value)
+    invalid = (
+        not value
+        or relative == PurePosixPath(".")
+        or relative.is_absolute()
+        or ".." in relative.parts
+        or not relative.parts
+        or relative.parts[0] != "data"
+    )
+    if invalid:
+        raise DriveDataError(f"Unsafe catalog path: {value!r}")
+    return relative
+
+
+def file_md5(path: Path) -> str:
+    digest = hashlib.md5()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(8 * 2**20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def local_cache(cache: str | Path | None) -> Path:
+    selected = Path(cache) if cache is not None else Path(tempfile.gettempdir()) / "zhongdb-cache"
+    return selected.resolve()
+
+
+def is_colab() -> bool:
+    try:
+        return importlib.util.find_spec("google.colab") is not None
+    except ModuleNotFoundError:
+        return False
+
+
+def prepare_colab(mount: bool) -> None:
+    if mount and is_colab():
+        mount_colab_drive()
+
+
+def mount_colab_drive() -> None:
+    if Path("/content/drive/MyDrive").is_dir():
+        return
+    from google.colab import drive as colab_drive
+
+    colab_drive.mount("/content/drive", force_remount=False)
+
+
+def discover_release() -> Path:
+    my_drive = Path("/content/drive/MyDrive")
+    choices = (
+        Path(__file__).resolve().parent / DATASET_NAME,
+        my_drive / DATASET_SHORTCUT,
+        my_drive / WORKSPACE_NAME / DATASET_NAME,
+    )
+    match = next((path for path in choices if path.is_dir()), None)
+    if match is None:
+        raise DriveDataError(
+            f"Shared dataset not found. Add {DATASET_SHORTCUT!r} or the team workspace "
+            "to My Drive, then rerun."
+        )
+    return match
+
+
+def install_dependencies() -> None:
     try:
         importlib.import_module("duckdb")
         importlib.import_module("pandas")
@@ -309,109 +322,50 @@ def _install_catalog_dependencies() -> None:
         )
 
 
-def _read_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+def expose_code_folder() -> None:
+    code = str(Path(__file__).resolve().parent)
+    if code not in sys.path:
+        sys.path.insert(0, code)
+    importlib.invalidate_caches()
 
 
-def _catalog_row(row: Mapping[str, Any]) -> dict[str, Any]:
-    optional = lambda value: str(value).strip() or None
-    return {
-        **dict(row),
-        "name": str(row["name"]),
-        "id": int(row["id"]),
-        "category": str(row["category"]),
-        "size_bytes": int(row["size_bytes"]),
-        "md5": str(row["md5"]).lower(),
-        "relative_path": str(row["relative_path"]),
-        "experiment": optional(row.get("experiment", "")),
-        "recording_id": optional(row.get("recording_id", "")),
-        "retinotopy_id": optional(row.get("retinotopy_id", "")),
-    }
-
-
-def _validate_catalog(files: Sequence[Mapping[str, Any]]) -> None:
-    if len(files) != EXPECTED_FILE_COUNT:
-        raise DriveDataError(f"Catalog has {len(files)} rows; expected {EXPECTED_FILE_COUNT}")
-    if sum(int(row["size_bytes"]) for row in files) != EXPECTED_TOTAL_BYTES:
-        raise DriveDataError("Catalog byte total does not match Figshare v2")
-    names = [_filename(row) for row in files]
-    ids = [int(row["id"]) for row in files]
-    if len(names) != len(set(names)) or len(ids) != len(set(ids)):
-        raise DriveDataError("Catalog file names and IDs must be unique")
-    for row in files:
-        name = _filename(row)
-        if Path(name).name != name:
-            raise DriveDataError(f"Catalog name must not contain a path: {name!r}")
-        if int(row["size_bytes"]) < 1:
-            raise DriveDataError(f"Catalog size must be positive: {name}")
-        md5 = str(row["md5"])
-        if len(md5) != 32 or any(char not in "0123456789abcdef" for char in md5):
-            raise DriveDataError(f"Invalid MD5 in catalog: {name}")
-        _safe_relative_path(str(row["relative_path"]))
-
-
-def _filename(row: Mapping[str, Any]) -> str:
-    value = row.get("filename", row.get("name"))
-    if value is None or Path(str(value)).name != str(value):
-        raise DriveDataError("Choose an exact catalog filename, not a path")
-    return str(value)
-
-
-def _safe_relative_path(value: str) -> PurePosixPath:
-    relative = PurePosixPath(value)
-    if (
-        not value
-        or relative == PurePosixPath(".")
-        or relative.is_absolute()
-        or ".." in relative.parts
-        or not relative.parts
-        or relative.parts[0] != "data"
-    ):
-        raise DriveDataError(f"Unsafe catalog path: {value!r}")
-    return relative
-
-
-def _md5(path: Path) -> str:
-    digest = hashlib.md5()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(8 * 2**20), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def _mount_colab_drive() -> None:
-    if Path("/content/drive/MyDrive").is_dir():
-        return
-    from google.colab import drive as colab_drive
-
-    colab_drive.mount("/content/drive", force_remount=False)
-
-
-def _discover_root() -> Path:
-    my_drive = Path("/content/drive/MyDrive")
-    choices = (
-        Path(__file__).resolve().parent / DATASET_NAME,
-        my_drive / DATASET_SHORTCUT,
-        my_drive / WORKSPACE_NAME / DATASET_NAME,
+def reload_workspace_modules() -> None:
+    modules = (
+        "arrays",
+        "catalog",
+        "database",
+        "dprime",
+        "dprime.evaluation",
+        "dprime.inference",
+        "dprime.trials",
+        "graph",
+        "graph.context",
+        "graph.display",
+        "graph.execution",
+        "graph.types",
+        "graph.diagram",
+        "graph.widget",
+        "release",
+        "sql",
+        "warehouse",
     )
-    match = next((path for path in choices if path.is_dir()), None)
-    if match is None:
-        raise DriveDataError(
-            f"Shared dataset not found. Add {DATASET_SHORTCUT!r} or the team workspace "
-            "to My Drive, then rerun."
-        )
-    return match
+    for name in modules:
+        sys.modules.pop(name, None)
+
+
+def discard(path: Path) -> None:
+    path.unlink(missing_ok=True)
 
 
 __all__ = [
     "DEFAULT_MAX_GIB",
     "DriveDataError",
+    "atomic_copy",
+    "catalog_filename",
+    "catalog_path",
     "fetch_file",
     "is_colab",
     "load_numpy",
     "locate_release",
-    "read_experiment_index",
-    "read_release",
-    "read_snapshot",
     "setup",
 ]

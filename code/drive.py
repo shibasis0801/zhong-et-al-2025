@@ -338,10 +338,13 @@ def expose_code_folder() -> None:
 
 def reload_workspace_modules() -> None:
     modules = (
-        "arrays",
-        "catalog",
-        "dataframe_sql",
         "database",
+        "data_access",
+        "data_access.arrays",
+        "data_access.catalog",
+        "data_access.dataframes",
+        "data_access.release",
+        "data_access.warehouse",
         "dprime",
         "dprime.evaluation",
         "dprime.inference",
@@ -355,9 +358,7 @@ def reload_workspace_modules() -> None:
         "graph.widget",
         "joiner",
         "position",
-        "release",
         "sql",
-        "warehouse",
     )
     for name in modules:
         sys.modules.pop(name, None)

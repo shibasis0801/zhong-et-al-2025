@@ -6,11 +6,8 @@ from typing import Any, Iterable, Mapping
 
 import pandas as pd
 
-import arrays
-import catalog
 import drive
-import release
-import warehouse
+from data_access import arrays, catalog, release, warehouse
 
 
 class ZhongDB:

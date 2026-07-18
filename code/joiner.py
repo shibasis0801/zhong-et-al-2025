@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-import duckdb
 import numpy as np
 import pandas as pd
 
+from dataframe_sql import DataFrameSQL
 from database import ZhongDB
 from position import AlignmentReport, align_trailing_behavior_frames
 
@@ -23,8 +23,10 @@ AREA_GROUPS = {
     9: "mHV",
 }
 
+Selection = pd.DataFrame | pd.Series | Iterable[int] | None
 
-class Joiner:
+
+class Joiner(DataFrameSQL):
     def __init__(
         self,
         database: ZhongDB,
@@ -43,118 +45,82 @@ class Joiner:
             experiment=experiment,
             max_gib=max_gib,
         )
-        neural = database.load(recording_id, "reduced_neural", max_gib=max_gib)
-        retinotopy = database.load(recording_id, "retinotopy", max_gib=max_gib)
-
-        self.U, self.V = neural_factors(neural)
-        behavior_frames, self.alignment = aligned_behavior(
-            behavior,
-            self.V.shape[1],
-            max_trailing_behavior_frames,
+        reduced_neural = database.load(
+            recording_id,
+            "reduced_neural",
+            max_gib=max_gib,
         )
-        self.trials = trial_table(behavior, recording_id)
-        self.stimuli = stimulus_table(behavior, recording_id)
-        self.frames = frame_table(
-            behavior_frames,
+        retinotopy = database.load(
+            recording_id,
+            "retinotopy",
+            max_gib=max_gib,
+        )
+
+        self.components_by_neuron, self.components_by_frame = reduced_neural_axes(
+            reduced_neural
+        )
+        self.U = self.components_by_neuron
+        self.V = self.components_by_frame
+
+        self.trials = trials_by_id(behavior, recording_id)
+        self.stimuli = stimuli_by_wall(behavior, recording_id)
+        self.frames, self.alignment = behavior_by_frame(
+            behavior,
             self.trials,
             self.stimuli,
             recording_id,
             experiment,
+            frame_count=self.components_by_frame.shape[1],
+            max_trailing_frames=max_trailing_behavior_frames,
         )
-        self.neurons = neuron_table(retinotopy, self.U.shape[1], recording_id)
-
-        self._connection = duckdb.connect(":memory:")
-        self._tables: dict[str, pd.DataFrame] = {}
-        self.register("frames", self.frames)
-        self.register("neurons", self.neurons)
-        self.register("trials", self.trials)
-        self.register("stimuli", self.stimuli)
-
-    @property
-    def tables(self) -> tuple[str, ...]:
-        return tuple(sorted(self._tables))
-
-    def register(self, name: str, frame: pd.DataFrame) -> pd.DataFrame:
-        if not name.isidentifier():
-            raise ValueError("Table name must be a Python and SQL identifier")
-        if name in self._tables:
-            self._connection.unregister(name)
-        stored = frame.copy()
-        self._tables[name] = stored
-        self._connection.register(name, stored)
-        return stored
-
-    def query(
-        self,
-        statement: str,
-        parameters: Iterable[Any] | Mapping[str, Any] | None = None,
-    ) -> pd.DataFrame:
-        relation = (
-            self._connection.execute(statement, parameters)
-            if parameters is not None
-            else self._connection.execute(statement)
+        self.neurons = retinotopy_by_neuron(
+            retinotopy,
+            recording_id,
+            neuron_count=self.components_by_neuron.shape[1],
         )
-        return relation.fetchdf()
+
+        super().__init__(
+            frames=self.frames,
+            neurons=self.neurons,
+            trials=self.trials,
+            stimuli=self.stimuli,
+        )
 
     def join(
         self,
-        frames: pd.DataFrame | pd.Series | Iterable[int] | None = None,
-        neurons: pd.DataFrame | pd.Series | Iterable[int] | None = None,
+        frames: Selection = None,
+        neurons: Selection = None,
         *,
         max_cells: int = 1_000_000,
     ) -> pd.DataFrame:
         frame_ids = selected_ids(frames, "frame_id", len(self.frames))
         neuron_ids = selected_ids(neurons, "neuron_id", len(self.neurons))
-        cell_count = len(frame_ids) * len(neuron_ids)
-
-        if cell_count > max_cells:
+        pair_count = len(frame_ids) * len(neuron_ids)
+        if pair_count > max_cells:
             raise ValueError(
-                f"The selection contains {cell_count:,} neuron-frame pairs; "
-                f"raise max_cells or select fewer than {max_cells:,}"
+                f"The selection contains {pair_count:,} neuron-frame pairs; "
+                f"raise max_cells or select a smaller block"
             )
 
-        values = self.U[:, neuron_ids].T @ self.V[:, frame_ids]
-        activity = pd.DataFrame(
-            {
-                "neuron_id": np.repeat(neuron_ids, len(frame_ids)),
-                "frame_id": np.tile(frame_ids, len(neuron_ids)),
-                "activity": values.reshape(-1),
-            }
+        activity = reconstruct_activity(
+            self.components_by_neuron,
+            self.components_by_frame,
+            neuron_ids,
+            frame_ids,
         )
-        activity = activity.merge(
+        activity_with_retinotopy = activity.merge(
             self.neurons,
             on="neuron_id",
             how="left",
             validate="many_to_one",
         )
-        activity = activity.merge(
+        activity_with_behavior = activity_with_retinotopy.merge(
             self.frames,
             on=["recording_id", "frame_id"],
             how="left",
             validate="many_to_one",
         )
-        return self.register("activity", activity)
-
-    def schema(self, table: str | None = None) -> pd.DataFrame:
-        if table is None:
-            return pd.DataFrame(
-                [
-                    {"table": name, "rows": len(frame), "columns": len(frame.columns)}
-                    for name, frame in sorted(self._tables.items())
-                ]
-            )
-        if table not in self._tables:
-            raise KeyError(f"Unknown table {table!r}; choose from {self.tables}")
-        return self.query(f'DESCRIBE SELECT * FROM "{table}"')
-
-    def close(self) -> None:
-        self._connection.close()
-
-    def __enter__(self) -> "Joiner":
-        return self
-
-    def __exit__(self, *_args: Any) -> None:
-        self.close()
+        return self.register("activity", activity_with_behavior)
 
     def __repr__(self) -> str:
         return (
@@ -163,69 +129,41 @@ class Joiner:
         )
 
 
-def neural_factors(neural: Any) -> tuple[np.ndarray, np.ndarray]:
-    if not isinstance(neural, Mapping) or not {"U", "V"}.issubset(neural):
+def reduced_neural_axes(reduced_neural: Any) -> tuple[np.ndarray, np.ndarray]:
+    if not isinstance(reduced_neural, Mapping) or not {"U", "V"}.issubset(
+        reduced_neural
+    ):
         raise ValueError("Reduced neural data must contain U and V")
 
-    U = np.asarray(neural["U"])
-    V = np.asarray(neural["V"])
-    if U.ndim != 2 or V.ndim != 2:
+    components_by_neuron = np.asarray(reduced_neural["U"])
+    components_by_frame = np.asarray(reduced_neural["V"])
+    if components_by_neuron.ndim != 2 or components_by_frame.ndim != 2:
         raise ValueError("U and V must both be two-dimensional")
-    if U.shape[0] != V.shape[0]:
-        raise ValueError(f"U and V component counts disagree: {U.shape}, {V.shape}")
-    return U, V
+    if components_by_neuron.shape[0] != components_by_frame.shape[0]:
+        raise ValueError(
+            "U and V must have the same component axis: "
+            f"{components_by_neuron.shape}, {components_by_frame.shape}"
+        )
+    return components_by_neuron, components_by_frame
 
 
-def aligned_behavior(
-    behavior: Any,
-    neural_frames: int,
-    max_trailing_behavior_frames: int,
-) -> tuple[dict[str, np.ndarray], AlignmentReport]:
-    if not isinstance(behavior, Mapping):
-        raise ValueError("Behavior data must be a mapping")
-
-    names = [
-        "ft_trInd",
-        "ft_Pos",
-        "ft_isMoving" if "ft_isMoving" in behavior else "ft_move",
-        "ft_RunSpeed",
-        "ft_WallID",
-        "ft_CorrSpc",
-    ]
-    if "ft" in behavior:
-        names.append("ft")
-    missing = [name for name in names if name not in behavior]
-    if missing:
-        raise ValueError(f"Behavior data is missing {missing}")
-
-    arrays = {name: vector(behavior[name], name) for name in names}
-    _, aligned, report = align_trailing_behavior_frames(
-        np.empty((neural_frames, 0)),
-        arrays,
-        max_trailing_behavior_frames=max_trailing_behavior_frames,
-    )
-    return aligned, report
-
-
-def frame_table(
-    behavior: Mapping[str, np.ndarray],
+def behavior_by_frame(
+    behavior: Mapping[str, Any],
     trials: pd.DataFrame,
     stimuli: pd.DataFrame,
     recording_id: str,
     experiment: str | None,
-) -> pd.DataFrame:
-    frame_count = len(behavior["ft_Pos"])
-    position_dm = behavior["ft_Pos"].astype(float)
-    raw_trial = behavior["ft_trInd"].astype(float)
-    rounded_trial = np.rint(raw_trial)
-    integer_trial = np.isfinite(raw_trial) & np.isclose(raw_trial, rounded_trial)
-    valid_trial = integer_trial & (rounded_trial >= 0) & (rounded_trial < len(trials))
-    trial_id = pd.array(
-        np.where(valid_trial, rounded_trial, np.nan),
-        dtype="Int64",
+    *,
+    frame_count: int,
+    max_trailing_frames: int,
+) -> tuple[pd.DataFrame, AlignmentReport]:
+    aligned, report = behavior_aligned_to_neural_frames(
+        behavior,
+        frame_count,
+        max_trailing_frames,
     )
-
-    movement_name = "ft_isMoving" if "ft_isMoving" in behavior else "ft_move"
+    trial_id, valid_trial = valid_trial_ids(aligned["trial_id"], len(trials))
+    position_dm = aligned["position_dm"].astype(float)
 
     columns: dict[str, Any] = {
         "recording_id": recording_id,
@@ -235,75 +173,45 @@ def frame_table(
         "valid_trial": valid_trial,
         "position_dm": position_dm,
         "position_m": position_dm / 10.0,
-        "is_moving": behavior[movement_name] > 0,
-        "run_speed": behavior["ft_RunSpeed"].astype(float),
-        "wall_at_frame": behavior["ft_WallID"].astype(str),
-        "in_texture": behavior["ft_CorrSpc"].astype(bool),
+        "is_moving": aligned["is_moving"],
+        "run_speed": aligned["run_speed"],
+        "wall_at_frame": aligned["wall_at_frame"],
+        "in_texture": aligned["in_texture"],
     }
-    if "ft" in behavior:
-        columns["time"] = behavior["ft"]
+    if "time" in aligned:
+        columns["time"] = aligned["time"]
 
     frames = pd.DataFrame(columns)
-    frames = frames.merge(
+    frames_with_trials = frames.merge(
         trials,
         on=["recording_id", "trial_id"],
         how="left",
         validate="many_to_one",
     )
-    return frames.merge(
+    frames_with_stimuli = frames_with_trials.merge(
         stimuli,
         on=["recording_id", "wall_name"],
         how="left",
         validate="many_to_one",
     )
+    return frames_with_stimuli, report
 
 
-def trial_table(behavior: Mapping[str, Any], recording_id: str) -> pd.DataFrame:
-    if "WallName" not in behavior:
-        raise ValueError("Behavior data is missing WallName")
-    walls = vector(behavior["WallName"], "WallName")
-    return pd.DataFrame(
-        {
-            "recording_id": recording_id,
-            "trial_id": np.arange(len(walls), dtype=np.int64),
-            "wall_name": walls.astype(str),
-        }
-    )
-
-
-def stimulus_table(behavior: Mapping[str, Any], recording_id: str) -> pd.DataFrame:
-    missing = [name for name in ["UniqWalls", "stim_id"] if name not in behavior]
-    if missing:
-        raise ValueError(f"Behavior data is missing {missing}")
-    walls = vector(behavior["UniqWalls"], "UniqWalls")
-    roles = vector(behavior["stim_id"], "stim_id")
-    if len(walls) != len(roles):
-        raise ValueError("UniqWalls and stim_id must have the same length")
-    return pd.DataFrame(
-        {
-            "recording_id": recording_id,
-            "wall_name": walls.astype(str),
-            "stimulus_role": pd.to_numeric(
-                pd.Series(roles),
-                errors="coerce",
-            ).astype("Int64"),
-        }
-    )
-
-
-def neuron_table(
+def retinotopy_by_neuron(
     retinotopy: Any,
-    neuron_count: int,
     recording_id: str,
+    *,
+    neuron_count: int,
 ) -> pd.DataFrame:
     if not isinstance(retinotopy, Mapping):
         raise ValueError("Retinotopy data must be a mapping")
-    areas = vector(retinotopy.get("iarea", []), "iarea").astype(np.int64)
+    areas = one_dimensional(retinotopy.get("iarea", []), "iarea").astype(np.int64)
     coordinates = np.asarray(retinotopy.get("xy_t", []))
     if len(areas) != neuron_count or coordinates.shape != (neuron_count, 2):
         raise ValueError(
-            "Retinotopy must provide one iarea value and one xy_t pair per neuron"
+            "Retinotopy must provide one iarea value and one xy_t pair per U neuron"
         )
+
     return pd.DataFrame(
         {
             "recording_id": recording_id,
@@ -316,11 +224,106 @@ def neuron_table(
     )
 
 
-def selected_ids(
-    selection: pd.DataFrame | pd.Series | Iterable[int] | None,
-    column: str,
-    size: int,
-) -> np.ndarray:
+def reconstruct_activity(
+    components_by_neuron: np.ndarray,
+    components_by_frame: np.ndarray,
+    neuron_ids: np.ndarray,
+    frame_ids: np.ndarray,
+) -> pd.DataFrame:
+    values = components_by_neuron[:, neuron_ids].T @ components_by_frame[:, frame_ids]
+    return pd.DataFrame(
+        {
+            "neuron_id": np.repeat(neuron_ids, len(frame_ids)),
+            "frame_id": np.tile(frame_ids, len(neuron_ids)),
+            "activity": values.reshape(-1),
+        }
+    )
+
+
+def trials_by_id(behavior: Mapping[str, Any], recording_id: str) -> pd.DataFrame:
+    if "WallName" not in behavior:
+        raise ValueError("Behavior data is missing WallName")
+    walls = one_dimensional(behavior["WallName"], "WallName")
+    return pd.DataFrame(
+        {
+            "recording_id": recording_id,
+            "trial_id": np.arange(len(walls), dtype=np.int64),
+            "wall_name": walls.astype(str),
+        }
+    )
+
+
+def stimuli_by_wall(behavior: Mapping[str, Any], recording_id: str) -> pd.DataFrame:
+    missing = [name for name in ["UniqWalls", "stim_id"] if name not in behavior]
+    if missing:
+        raise ValueError(f"Behavior data is missing {missing}")
+    walls = one_dimensional(behavior["UniqWalls"], "UniqWalls")
+    roles = one_dimensional(behavior["stim_id"], "stim_id")
+    if len(walls) != len(roles):
+        raise ValueError("UniqWalls and stim_id must have the same length")
+
+    return pd.DataFrame(
+        {
+            "recording_id": recording_id,
+            "wall_name": walls.astype(str),
+            "stimulus_role": pd.to_numeric(
+                pd.Series(roles),
+                errors="coerce",
+            ).astype("Int64"),
+        }
+    )
+
+
+def behavior_aligned_to_neural_frames(
+    behavior: Mapping[str, Any],
+    frame_count: int,
+    max_trailing_frames: int,
+) -> tuple[dict[str, np.ndarray], AlignmentReport]:
+    movement = "ft_isMoving" if "ft_isMoving" in behavior else "ft_move"
+    source_fields = {
+        "trial_id": "ft_trInd",
+        "position_dm": "ft_Pos",
+        "is_moving": movement,
+        "run_speed": "ft_RunSpeed",
+        "wall_at_frame": "ft_WallID",
+        "in_texture": "ft_CorrSpc",
+    }
+    if "ft" in behavior:
+        source_fields["time"] = "ft"
+
+    missing = [source for source in source_fields.values() if source not in behavior]
+    if missing:
+        raise ValueError(f"Behavior data is missing {missing}")
+
+    fields = {
+        name: one_dimensional(behavior[source], source)
+        for name, source in source_fields.items()
+    }
+    fields["is_moving"] = fields["is_moving"] > 0
+    fields["run_speed"] = fields["run_speed"].astype(float)
+    fields["wall_at_frame"] = fields["wall_at_frame"].astype(str)
+    fields["in_texture"] = fields["in_texture"].astype(bool)
+
+    _, aligned, report = align_trailing_behavior_frames(
+        np.empty((frame_count, 0)),
+        fields,
+        max_trailing_behavior_frames=max_trailing_frames,
+    )
+    return aligned, report
+
+
+def valid_trial_ids(
+    values: np.ndarray,
+    trial_count: int,
+) -> tuple[pd.arrays.IntegerArray, np.ndarray]:
+    raw = values.astype(float)
+    rounded = np.rint(raw)
+    integer = np.isfinite(raw) & np.isclose(raw, rounded)
+    valid = integer & (rounded >= 0) & (rounded < trial_count)
+    return pd.array(np.where(valid, rounded, np.nan), dtype="Int64"), valid
+
+
+def selected_ids(selection: Selection, column: str, size: int) -> np.ndarray:
     if selection is None:
         values = np.arange(size)
     elif isinstance(selection, pd.DataFrame):
@@ -344,7 +347,7 @@ def selected_ids(
     return np.asarray(ids, dtype=np.int64)
 
 
-def vector(value: Any, name: str) -> np.ndarray:
+def one_dimensional(value: Any, name: str) -> np.ndarray:
     array = np.asarray(value)
     if array.ndim == 2 and 1 in array.shape:
         array = array.reshape(-1)

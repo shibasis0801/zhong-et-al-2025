@@ -333,6 +333,7 @@ def reload_workspace_modules() -> None:
     modules = (
         "arrays",
         "catalog",
+        "dataframe_sql",
         "database",
         "dprime",
         "dprime.evaluation",

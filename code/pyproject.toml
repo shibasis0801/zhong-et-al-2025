@@ -33,6 +33,7 @@ dev = [
 py-modules = [
   "arrays",
   "catalog",
+  "dataframe_sql",
   "database",
   "drive",
   "joiner",
@@ -57,6 +58,7 @@ python_version = "3.12"
 files = [
   "arrays.py",
   "catalog.py",
+  "dataframe_sql.py",
   "database.py",
   "drive.py",
   "joiner.py",

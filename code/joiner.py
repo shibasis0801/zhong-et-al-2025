@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+import drive
 from dataframe_sql import DataFrameSQL
 from database import ZhongDB
 from position import AlignmentReport, align_trailing_behavior_frames
@@ -33,7 +34,7 @@ class Joiner(DataFrameSQL):
         recording_id: str,
         *,
         experiment: str | None = None,
-        max_gib: float = 10.0,
+        max_gib: float = drive.DATASET["default_max_gib"],
         max_trailing_behavior_frames: int = 3,
     ) -> None:
         self.recording_id = recording_id

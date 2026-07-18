@@ -80,7 +80,7 @@ class ZhongDB:
         self,
         filename: str,
         *,
-        max_gib: float = drive.DEFAULT_MAX_GIB,
+        max_gib: float = drive.DATASET["default_max_gib"],
     ) -> Path:
         return self._fetch(self._file(filename), max_gib)
 
@@ -88,7 +88,7 @@ class ZhongDB:
         self,
         filename: str,
         *,
-        max_gib: float = drive.DEFAULT_MAX_GIB,
+        max_gib: float = drive.DATASET["default_max_gib"],
     ) -> Any:
         return self._load(self._file(filename), max_gib)
 
@@ -98,7 +98,7 @@ class ZhongDB:
         layer: str,
         *,
         experiment: str | None = None,
-        max_gib: float = drive.DEFAULT_MAX_GIB,
+        max_gib: float = drive.DATASET["default_max_gib"],
     ) -> Path:
         return self._fetch(self._recording_file(recording_id, layer, experiment), max_gib)
 
@@ -108,7 +108,7 @@ class ZhongDB:
         layer: str,
         *,
         experiment: str | None = None,
-        max_gib: float = drive.DEFAULT_MAX_GIB,
+        max_gib: float = drive.DATASET["default_max_gib"],
     ) -> Any:
         row = self._recording_file(recording_id, layer, experiment)
         value = self._load(row, max_gib)

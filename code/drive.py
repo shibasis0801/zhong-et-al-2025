@@ -14,19 +14,25 @@ from typing import Any, Mapping
 import numpy as np
 
 
-ARTICLE_ID = 28811129
-ARTICLE_VERSION = 2
-EXPECTED_FILE_COUNT = 297
-EXPECTED_TOTAL_BYTES = 452_233_500_962
-EXPECTED_IMAGING_RECORDINGS = 89
-EXPECTED_IMAGING_MICE = 19
-DEFAULT_MAX_GIB = 10.0
-WORKSPACE_NAME = "Zhong et al. 2025 - Neuromatch Team Workspace"
-DATASET_NAME = "Janelia dataset - Zhong et al. 2025 (Figshare v2)"
-DATASET_SHORTCUT = "Zhong2025_Janelia_v2"
-METADATA_ROOT = Path(__file__).resolve().parent / "metadata"
-INVENTORY_SNAPSHOT = METADATA_ROOT / "figshare-v2-inventory.json"
-EXPERIMENT_INDEX_SNAPSHOT = METADATA_ROOT / "imaging-experiment-index.json"
+DATASET: dict[str, Any] = {
+    "article_id": 28811129,
+    "article_version": 2,
+    "expected_file_count": 297,
+    "expected_total_bytes": 452_233_500_962,
+    "expected_imaging_recordings": 89,
+    "expected_imaging_mice": 19,
+    "default_max_gib": 10.0,
+    "workspace_name": "Zhong et al. 2025 - Neuromatch Team Workspace",
+    "dataset_name": "Janelia dataset - Zhong et al. 2025 (Figshare v2)",
+    "dataset_shortcut": "Zhong2025_Janelia_v2",
+    "metadata_root": Path(__file__).resolve().parent / "metadata",
+    "inventory_snapshot": (
+        Path(__file__).resolve().parent / "metadata/figshare-v2-inventory.json"
+    ),
+    "experiment_index_snapshot": (
+        Path(__file__).resolve().parent / "metadata/imaging-experiment-index.json"
+    ),
+}
 
 
 class DriveDataError(RuntimeError):
@@ -83,7 +89,7 @@ def fetch_file(
     *,
     root: str | Path | None,
     cache: str | Path,
-    max_gib: float = DEFAULT_MAX_GIB,
+    max_gib: float = DATASET["default_max_gib"],
 ) -> Path:
     selection = selected_file(row, max_gib)
     source = source_path(root, selection)
@@ -102,7 +108,7 @@ def load_numpy(
     *,
     root: str | Path | None,
     cache: str | Path,
-    max_gib: float = DEFAULT_MAX_GIB,
+    max_gib: float = DATASET["default_max_gib"],
     allow_pickle: bool = False,
 ) -> Any:
     path = fetch_file(row, root=root, cache=cache, max_gib=max_gib)
@@ -291,14 +297,15 @@ def mount_colab_drive() -> None:
 def discover_release() -> Path:
     my_drive = Path("/content/drive/MyDrive")
     choices = (
-        Path(__file__).resolve().parent / DATASET_NAME,
-        my_drive / DATASET_SHORTCUT,
-        my_drive / WORKSPACE_NAME / DATASET_NAME,
+        Path(__file__).resolve().parent / DATASET["dataset_name"],
+        my_drive / DATASET["dataset_shortcut"],
+        my_drive / DATASET["workspace_name"] / DATASET["dataset_name"],
     )
     match = next((path for path in choices if path.is_dir()), None)
     if match is None:
         raise DriveDataError(
-            f"Shared dataset not found. Add {DATASET_SHORTCUT!r} or the team workspace "
+            f"Shared dataset not found. Add {DATASET['dataset_shortcut']!r} "
+            "or the team workspace "
             "to My Drive, then rerun."
         )
     return match
@@ -361,7 +368,7 @@ def discard(path: Path) -> None:
 
 
 __all__ = [
-    "DEFAULT_MAX_GIB",
+    "DATASET",
     "DriveDataError",
     "atomic_copy",
     "catalog_filename",

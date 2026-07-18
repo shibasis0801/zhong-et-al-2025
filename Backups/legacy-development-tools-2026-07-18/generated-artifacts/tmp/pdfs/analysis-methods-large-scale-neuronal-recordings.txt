@@ -1,0 +1,789 @@
+ RES EARCH
+
+
+                                               ◥                                                                      warnings to neuroscientists who thought they
+       REVIEW SUMMARY                                                                                                 were studying decision-making, working mem-
+                                                                                                                      ory, and other internal processes: What you
+ NEUROSCIENCE                                                                                                         study might be direct reflections of movement
+                                                                                                                      instead—for example, through motor effer-
+ Analysis methods for large-scale neuronal recordings                                                                 ence or proprioception.
+                                                                                                                        All of these statements required the devel-
+ Carsen Stringer* and Marius Pachitariu                                                                               opment of bespoke mathematical models that
+                                                                                                                      were carefully applied to large-scale neural data
+                                                                                                                      together with a well-thought-out set of statisti-
+ BACKGROUND: It is now easier than ever to                       neural computations. For example, a long-            cal controls. The most successful applications
+ record the activity of many neurons in awake,                   standing question has been whether neural            of models to neural data can be described
+ behaving animals. These recordings can be                       circuits use a dedicated set of neural patterns      intuitively in words such as we did above, even
+ obtained either with multichannel electrodes                    or “neural code” to represent information            when the underlying mathematical techniques
+ or with two-photon microscopy, each with                        regardless of whether that activity is exter-        may be quite complex.
+ their own advantages. The latter breaks records                 nally or internally driven. Specifically, one          In this Review, we synthesize some of the
+ for the number of simultaneously recorded                       may ask whether the neural activity patterns         most promising approaches and try to offer
+ neurons, which can reach into the hundreds of                   observed when an animal explores one en-             insights into what motivates current studies
+ thousands. The former allows for unmatched                      vironment are similar, up to a temporal permu-       and how the methods developed may be fur-
+ temporal resolution and easy access to deep                     tation, to the activity patterns during rest or      ther used in the future. We emphasize the
+ brain areas. Spoiled with this embarrassment                    during sleep. The answer turned out to be a          need to answer concrete scientific questions
+ of riches, neuroscientists must now demon-                      resounding yes for grid cells in the rat en-         and the importance of performing appropriate
+ strate that they can use such data to answer                    torhinal cortex, and a clear no for a similar        controls and cross-validation to avoid some the
+
+
+
+
+                                                                                                                                                                                      Downloaded from https://www.science.org on July 14, 2026
+ longstanding questions and formulate new                        question in primary visual cortex. The activity      most common pitfalls when analyzing big data.
+ ones in the effort to understand the basic                      patterns evoked by stimuli in visual cortex
+ principles of brain function. The primary ob-                   were almost as different as possible from the        OUTLOOK: Newly uncovered scaling laws over
+ stacle appears to be conceptual: What can we                    patterns during spontaneous activity, and            the number of recorded neurons demon-
+ even infer from large-scale recordings that we                  the latter were strongly related to orofacial        strate that in many tasks, such as neural
+ could not have learned from smaller ones?                       behaviors instead. In further studies, move-         decoding or encoding, the amount of infor-
+                                                                 ments in general were found to influence             mation or unique variance continues to in-
+ ADVANCES: Some of the recent advances in this                   activity across the entire mouse brain, even         crease as the number of neurons increases
+ field have come by formulating new analysis                     during the execution of sensory-guided motor         even beyond 10,000. Neural activity patterns
+ methods that probe specific properties of                       tasks. Multiple studies have now given stark         are thus rich with information, although it
+                                                                                                                      remains to be seen whether that information
+                                                                                                                      is rich with meaning. To find its meaning,
+  A             One microcircuit       Multiple interacting           One brain area        Multiple interacting      neuroscientists will need to combine large-
+                  (<200 µm)               microcircuits              (500 - 2000 µm)            brain areas           scale recordings with other methods and par-
+                                         (200 - 500 µm)                                        (>2000 µm)             adigms such as complex behavior, two-photon
+                                                                                                                      optogenetics, or anatomical methods. For the
+                                                                                                                      example of grid cells above, the persistence
+                                                                                                                      of the neural code suggests a dynamical con-
+                                                                                                                      straint imposed by recurrent circuitry; con-
+                                                                                                                      nectomic reconstruction could confirm this
+                                                                                                                      in the coming years.
+                                                                                                                         Perhaps equally important, experimental
+                                                                                                                      neuroscientists will need to quickly become
+                               20 µm                     50 µm                     200 µm                    500 µm   experts in computational and statistical anal-
+                                                                                                                      ysis methods so that they can fully take ad-
+ B A “rastermap” of neural activity coordinated across spatial scales                                                 vantage of the overwhelming amount of new
+                                                                                                                      data. Innovative online summer courses such
+                                                                                                                      as the Neuromatch Academy can get many
+                                                                                                                      neuroscientists up to speed quickly and even
+                                                                                                                      familiarize them with the rapid advances in
+                                                                                                                      artificial intelligence with the new “NeuroAI”
+                                                                                                                      course launched this summer.
+                                                                                                                                                              ▪
+5000 neurons                                                                                                          Howard Hughes Medical Institute (HHMI) Janelia Research
+                                                                                                                      Campus, Ashburn, VA, USA.
+                                                                                                                      *Corresponding author. Email: stringerc@janelia.hhmi.org
+               10 sec.
+                                                                                                                      Cite this article as C. Stringer, M. Pachitariu, Science 386,
+                                                                                                                      eadp7429 (2024). DOI: 10.1126/science.adp7429
+ An abundance of data available for analysis. (A) Two-photon calcium imaging from multiple visual cortical
+ areas in a behaving mouse. (B) Raster plot of neural activity from the recording in (A), showing coordinated                READ THE FULL ARTICLE AT
+ activity across timescales and spatial scales.                                                                              https://doi.org/10.1126/science.adp7429
+
+
+ Stringer et al., Science 386, 636 (2024)          8 November 2024                                                                                                         1 of 1
+RES EARCH
+
+
+                      ◥                                                                                          devices have also been developed for use in
+ REVIEW                                                                                                          freely moving animals, by using either one-
+                                                                                                                 photon (22) or more recently two-photon ex-
+NEUROSCIENCE                                                                                                     citation (23). Recent iterations of the calcium
+                                                                                                                 sensors (24) more accurately represent action
+Analysis methods for large-scale neuronal recordings                                                             potentials, and the sensors can now be tar-
+                                                                                                                 geted toward specific neuronal compartments
+Carsen Stringer* and Marius Pachitariu                                                                           such as somas and axons (25, 26). Calcium
+                                                                                                                 imaging has also become effective in nonhuman
+Simultaneous recordings from hundreds or thousands of neurons are becoming routine because of                    primates (27, 28). Similar to the developments
+innovations in instrumentation, molecular tools, and data processing software. Such recordings can be            in electrophysiology, the large amount of data
+analyzed with data science methods, but it is not immediately clear what methods to use or how to                collected required the development of auto-
+adapt them for neuroscience applications. We review, categorize, and illustrate diverse analysis methods         mated pipelines such as Suite2p, Caiman, and
+for neural population recordings and describe how these methods have been used to make progress on               others for identifying regions of interest such
+longstanding questions in neuroscience. We review a variety of approaches, ranging from the                      as cells, extracting their time-varying activ-
+mathematically simple to the complex, from exploratory to hypothesis-driven, and from recently                   ity traces and converting these traces to an
+developed to more established methods. We also illustrate some of the common statistical pitfalls in             estimate of spike times through use of de-
+analyzing large-scale neural data.                                                                               convolution methods (20, 29, 30).
+                                                                                                                    Over the past few years, these technological
+
+
+
+
+T
+                                                                                                                 improvements have spread through many
+       he past decade has brought a large ar-              in the number of simultaneously recorded              neuroscience laboratories. Large amounts of
+       ray of new tools for investigating the              channels on a single electrode shank (3). This        data are being generated, and the question of
+       brain. Among these are tools that enable            advance was possible because of engineering           what to do with this data arises often. We
+
+
+
+
+                                                                                                                                                                       Downloaded from https://www.science.org on July 14, 2026
+       functional recordings of large numbers              efforts toward miniaturization and electronic         review recent analysis methods for large-
+       of neurons with electrophysiological or             integration. Subsequent iterations of the probe       scale neural recordings and the discoveries
+optical imaging methods (1–5). These tools                 have led to further miniaturization for use in        they generated. This Review will proceed as
+have been needed to make progress on a                     freely moving animals and more channels over          a series of questions, methods, and possible
+variety of questions in neuroscience. For ex-              multiple shanks for use in flatter brain areas        answers that someone might encounter when
+ample, single neurons respond with differ-                 such as the cortex and hippocampus (4), as            analyzing large-scale neural recordings. Perhaps
+ent numbers of action potentials to repeated               well as thicker and longer versions of the            you collected this data yourself, or a collabo-
+presentations of the same stimuli (6), but it              probe for use in nonhuman primates (5) and            rator has collected it for you. Or perhaps you
+has not been clear whether that variability                humans (9, 10). Other probes with many chan-          found the data shared on the internet, there
+is coordinated at a macroscopic level across               nels have also been developed separately—             being increasingly more open datasets online.
+entire brain areas. Similarly, neurons in sen-             notably, the flat arrays of thousands of electrodes   Here is a possible plan for how you might
+sory cortical areas fire action potentials in the          used in retinal recordings (11), and multiple         approach this data: (i) To start, you might use
+absence of sensory inputs (7), but it has not              types of flexible electrodes that promise im-         scaled-up versions of classical methods to look
+been known how their so-called “spontaneous”               proved stability for chronic recordings (12, 13).     for neurons with specific kinds of tuning
+activity is correlated at the level of entire              To take advantage of these new devices, an            properties and study the distribution of these
+neural populations or what that activity may               overhaul of classical data processing methods         properties under varying conditions. (ii) Then,
+represent. As a final example, individual grid             was needed because existing methods required          you might look for coordinated structure in
+cells in the entorhinal cortex represent peri-             substantial human manual curation, which is           the activity of all the neurons recorded simul-
+odic spatial features of the environment (8),              not effective for data at this scale. This led to     taneously, which would typically be done with
+but it has not been clear how the individual               the development of automated spike-sorting            dimensionality reduction methods. (iii) Last,
+lattices align and coordinate across an entire             methods such as Kilosort, MountainSort, JRClust,      you might attempt to connect the neural popu-
+population.                                                and others (14–16).                                   lations found in steps (i) and (ii) with task-
+   More generally, large-scale neural record-                 On the optical imaging side, progress has          relevant variables that can either be explicitly
+ings can be useful for at least three reasons:             mainly relied on two-photon calcium imaging           defined (stimuli or behaviors) or implicitly de-
+(i) they substantially accelerate data collection;         (17). Although first developed much earlier           fined through models (such as reward expecta-
+(ii) they enable the study of coordinated neural           (18), two-photon calcium imaging became wide-         tion or attentional modulation). We illustrate
+activity; and (iii) they enable the study of               spread with the introduction of the genetically       such analyses with toy examples throughout
+simultaneous computations happening across                 encoded calcium indicator GCaMP6 (1). Other           the figures.
+multiple spatial scales. We briefly review the             factors that havedriven the adoption of calcium
+technological progress that has enabled large-             imaging have been the availability of easy-to-        Single-neuron properties at scale
+scale recordings then devote the majority of               use commercial microscopes, innovations in            The easiest way to start analyzing large-scale
+this Review to analysis techniques for making              high-power laser technology, and a shift in           recordings is to use existing methods for
+sense of large-scale neural data.                          research interests toward smaller animal models       analyzing single neurons. This can be partic-
+                                                           for which molecular tools such as GCaMP are           ularly convenient as a starting point because it
+A brief history of technological progress                  easier to develop and test. Very-large-scale          allows one to replicate previous results and
+On the side of electrophysiology, the develop-             recordings of tens of thousands to hundreds           ensure that the new recording method does
+ment of Neuropixels constituted a major leap               of thousands of neurons were demonstrated             not introduce artifacts or warp the statistics
+                                                           in both zebrafish and mouse, although these           of the data in unknown ways. Conversely, it
+                                                           required sacrifices in temporal resolution (an        allows one to validate results found in previous
+Howard Hughes Medical Institute (HHMI) Janelia Research
+Campus, Ashburn, VA, USA.                                  example recording is provided in movie S1)            studies with many fewer neurons and poten-
+*Corresponding author. Email: stringerc@janelia.hhmi.org   (19–21). Specialized headmounted “miniscope”          tially to identify special cases such as particular
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)      8 November 2024                                                                                   1 of 9
+RES EARCH | R E V I E W
+
+
+populations in which previous results do not            ity or Fano factor (46). Thus, a large number of    rons can be averaged, which creates a less noisy
+hold. Taking advantage of the relatively quick          exploratory scatter plots can be generated and      population average, and opposite-tuned pop-
+pace of collecting neural recordings with mod-          visualized, which may allow for unexpected          ulation averages may be subtracted from this
+ern devices, one might be able to experimentally        relations to be discovered. This can be followed    average (47, 48, 50–53). Multiple coding di-
+acquire multiple datasets in the same animal            by investigations of how the relations change       rections can be obtained by use of different
+from different brain areas, from different cell         across brain areas or as a result of manipu-        variables. Decoding approaches can also be
+types, over multiple days of learning, or across        lations (Fig. 1A).                                  used to infer the weighting of neurons across
+various manipulations. This enables the con-                                                                the coding direction—for example, with linear
+ducting of survey-type studies, in which the            Population averaging                                regression, reduced rank regression, and other
+distribution of single-neuron properties is             Having potentially found some tuning prop-          models (54–58). One possible caveat of such
+measured and compared between neural pop-               erties of interest, the next step may be to         methods is that they rely on single-neuron
+ulations or between conditions, something that          combine or “average” the neurons in some            properties, which may be noisy. To improve on
+would have been difficult with previous data-           suitable way to clearly illustrate the tuning of    this, one may start by denoising or “cosmooth-
+sets of relatively few neurons (Fig. 1A). This          the entire population. In a recent study, we        ing” the neurons by using either simple methods
+approach has been effective in studying the             used this approach to find populations of           such as principal components analysis (PCA)
+response properties of sensory systems such as          neurons tuned to some learned, familiar visual      or non-negative matrix factorization (NMF),
+the visual, auditory, and somatosensory corti-          stimuli and tested whether that population          or more complex methods that use temporal
+ces (31–33) or the thalamic and midbrain sen-           responds to new stimuli according to their          information such as Gaussian process factor
+sory areas (34–37) and has also been used in            visual categories (47). Other applications in-      analysis (GPFA) (59).
+decision-making tasks and navigation tasks              clude identifying a neural population that is
+(38–41). In this data regime, exploratory analy-        tuned to the preparatory movement activity          The structure of neural population activity
+ses can be performed with simple scatter plots          or to the execution of a motor behavior, and        A more ambitious goal may be to use large-
+between pairs of parameters estimated from              analyzing the dynamics of that population on        scale recordings to identify structure and
+
+
+
+
+                                                                                                                                                                  Downloaded from https://www.science.org on July 14, 2026
+single-neuron response properties (Fig. 1A).            test trials with global optogenetic perturba-       coordinated patterns in the neural populations
+Many response properties can typically be               tions (48, 49).                                     (60–66). This structure may be generated in-
+measured—for example, selectivity indices (42),            A simple example of population averaging         trinsically by the dynamics of neural circuits,
+tuning curve shape (43), latency (44), and              is the “coding direction” analysis (Fig. 1B). To    such as in the precisely wired systems of the
+behavior correlations (45)—across trial variabil-       obtain a coding direction, similarly tuned neu-     Drosophila ring attractor (67) or in the central
+
+
+A Exploring single-neuron properties at scale
+
+
+
+
+B Population averaging                                                                                                           C Population smoothing
+
+
+
+
+              brain areas                          brain areas
+
+
+Fig. 1. Single-neuron analyses at scale. (A) Sequence of operations in a         (B) Illustration of population averaging approach. Neurons in different
+typical analysis of single-neuron properties. (Left) Response properties such    brain areas are found that are selective to (left) some particular stimulus
+as tuning curves can have multiple quantifiable properties—param1, param2,       and (middle left) some particular behavior. (Middle right) Neurons with the
+and so on. (Left middle) Scatter plots between these properties can help         same selectivity are grouped together and averaged to form multiple
+identify unexpected relations. (Middle) Scatter plots can be transformed into    coding directions. (Right) The dynamics of the coding directions can be
+2D density plots for quantification. (Middle right) Multiple density plots can   visualized as a function of stimuli and behavior, possibly across brain areas
+be obtained from different populations or the same population under different    and conditions. (C) Illustration of population smoothing or denoising
+manipulations. (Right) The difference in densities can reveal differences        approach that increases the signal-to-noise ratio of single neurons to help in
+between neural populations or the effect of manipulations.                       better identifying single-neuron properties.
+
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)   8 November 2024                                                                                 2 of 9
+RES EARCH | R E V I E W
+
+
+
+ A Geometry
+
+
+
+
+ B Topology                                                                         C Dynamics
+
+
+
+
+ D Exploratory analyses with dimensionality reduction
+
+
+
+
+                                                                                                                                                                   Downloaded from https://www.science.org on July 14, 2026
+Fig. 2. Population vectors and dimensionality reduction. (A) Geometrical          for grid cells. (C) Dynamical systems methods can identify dynamical
+approaches. (Left) Measuring angles between neural population vectors.            motifs, such as fixed points and line attractors. (D) Using dimensionality
+(Middle left) Measuring the variances and eigenvalues of the principal            reduction for exploratory analyses. (Left) Schematic of the relation
+components of a neural population. (Middle right) Comparing representations       between neurons and components. (Middle left) Finding relations between
+patterns between neural populations and models or between two different           components and stimuli or behaviors. (Middle right) Scatter plots to visualize
+neural populations. (Right) Aligning representations from one neural              trajectories over time for the components of interest. (Right) A different
+population to another. (B) Topological methods can identify nonlinear             approach called Rastermap for visualizing neural components across the
+underlying structure in neural population recordings, such as a torus             entire population at once.
+
+pattern generators characterized in other in-           and in spontaneous activity or during sleep          low-dimensional subspace, theoretical analyses
+vertebrates (68). In mammalian brains, it is            (Fig. 2A). If the geometry was maintained,           showed that this may be have been due to the
+much less clear which patterns are generated            that could be consistent with the hypothesis         low number of recorded neurons and the small
+intrinsically in a circuit and which are inherited      that the neural coordination emerges from            number of task conditions (74). Large-scale
+from the inputs to that circuit (69, 70). As we         intrinsic dynamics rather than inputs. For           recordings found that both the stimulus-evoked
+shall see, useful clues can emerge by extracting        example, the population vectors in entorhinal        and the movement-driven population activity
+and analyzing the structure of the neural popu-         grid cells, which represent space, maintain          in mouse visual cortex is high-dimensional
+lation activity.                                        their structure between wakefulness and sleep        and appears to obey a power-law decay of
+   These analyses typically start by converting         and across multiple different environments,          variance across principal components (21, 75).
+the data into a sequence of population vectors,         suggesting a role for intrinsic attractor dynam-     Similarly high-dimensional structure was found
+with each of these vectors representing the             ics (71). By contrast, in sensory brain regions      in the cerebellum and in monkey V1 (76, 77).
+pattern of neural firing across the entire popula-      we and others have found a near-orthogonal           By contrast, the linear dimensionality of ento-
+tion at a specific time point. This is commonly         representation of sensory-evoked and sponta-         rhinal population activity appears to be six,
+followed by some type of dimensionality reduc-          neous activity in both mice and fish (21, 72, 73).   regardless of task condition (71).
+tion method to identify simpler, latent repre-             Another property of interest is the linear          Another class of geometric methods focuses
+sentations of the high-dimensional neural data.         dimensionality of the possible subspace spanned      on pairwise comparisons between the geo-
+Although the representations can be studied             by neural population vectors. If neural activity     metries of different datasets such as, for example,
+in isolation, they can also be related back to          in a specific circuit was restricted to a low-       two recordings in different animals, or in the
+properties of the task or of the behavior.              dimensional subspace, across many stimuli or         same animal on two different days or across
+                                                        behaviors, that could be consistent with the         experimental conditions, or between a neuro-
+Characterizing population vectors                       hypothesis that neuronal network dynamics            nal dataset and a model (78–82). When a direct
+To start, one may ask whether the structure             force the activity to that subspace. Although        comparison is not possible or desirable, one
+and geometry of the neural population vectors           earlier studies had suggested that neural acti-      may instead rotate a subspace of the neural
+are maintained across various task conditions           vity in many brain areas was restricted to a         population activity from one dataset to match
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)   8 November 2024                                                                                  3 of 9
+RES EARCH | R E V I E W
+
+
+
+A Encoding models
+
+
+
+
+B Decoding models
+
+
+
+
+C Importance of cross-validation
+
+
+
+
+                                                                                                                                                                        Downloaded from https://www.science.org on July 14, 2026
+
+
+Fig. 3. Encoding, decoding, and cross-validation. (A) Two approaches for         neuron analyses require careful statistical cross-validation. (Left) Apparent
+building encoding models of neural responses. (Left) Schematic of reduced        sequences of neural activity may only be a consequence of ordering on
+rank regression. (Right) Schematic of encoding models with basis function        train trials if they do not persist on test trials. (Middle left) Tuning curves from
+representations of discrete temporal events. (B) Decoding-based approaches.      real data are often much more noisy than the assumed ideal. (Middle and right)
+(Left) Schematic of decoder. (Middle left) Comparison of decoder prediction      If the tuning curves are calculated on the training trials used to obtain the
+and the true variables on test trials. (Middle) Scaling of decoding error with   preferred stimulus, data with no tuning may appear tuned (example 1), data
+the number of recorded neurons or trials. (Middle right) Finding a relation      with tuning may have distorted tuning curve shapes (example 2), and
+between the decoding error and another experimental variable such as a           experimental manipulations may appear to produce complex tuning curve
+behavior or a second neural population (Right) Using the decoder to identify     changes (example 3). These biases are not present when tuning curves
+neural events corresponding to memory replay or planning. (C) Even single-       are computed on test trials.
+
+
+the structure of the equivalent subspace in a           that is low-dimensional in a topological sense        compared with the topology of the task or en-
+different dataset (83, 84). Such subspace align-        (86). Methods to identify such structures often       vironment (89, 90). In some cases, the analysis
+ment approaches may be relevant for brain-              start by constructing a graph of population           of perturbations around the identified manifold
+machine interfaces or for studies of across-day         vectors connected according to distance in            (87) or the persistence of the manifold across
+learning that may result in “representation drift”      Euclidean space (Fig. 2B) and use an optimi-          behavioral states (71) can further be indicative
+in some brain areas such as the hippocampus (85).       zation method such as Isomap, uniform man-            of attractor-like dynamics around fixed points.
+                                                        ifold approximation and projection (UMAP),            The next barrier in this field is in identifying
+Nonlinear dimensionality reduction                      or t-distributed stochastic neighbor embed-           topological invariants from more noisy and
+The intrinsic dynamics of neural circuits may           ding (t-SNE) to map these graphs onto a low-          mixed representations such as those found in
+result in low-dimensional population dy-                dimensional embedding (71, 87, 88). Last, the         the cortex during active behavior.
+namics that span a nonlinear, curved man-               embedding dimensions are often identified as
+ifold and therefore may not be found with               relevant behavioral variables, such as head           Dimensionality reduction of neural dynamics
+linear methods. Nonlinear dimensionality re-            direction or two-dimensional (2D) position,           Yet another possible clue for intrinsic neuronal
+duction methods can uncover such a structure            and the topology of the neural activity is often      dynamics comes from considering the behavior
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)   8 November 2024                                                                                      4 of 9
+RES EARCH | R E V I E W
+
+
+
+                                                                                         Tuning curve properties
+                                                                                         Correlations (with                  split &              by brain area
+                                      Single-neuron analyses                             behavior, stimuli)                  compare              by cell types
+                                      at scale                                                                                                    by session
+                                                                                         Population average
+                                      (Fig. 1)                                                                                                    by manipulation
+                                                                                         Coding direction                                         …
+                                                                                         …
+
+
+                                                                                                                                       Topology
+                                                                                                                                       nearest neighbors,
+   Large-scale                                                                          Geometry
+                                                                                                                                       cohomology, manifolds,
+                                      The structure of neural                           population vectors, orthogonality,
+   neural                             population activity                               dimensionality, subspace                       ...
+   population                                                                           alignment,
+                                      (Fig. 2)
+   recordings                                                                           representational similarity, …                 Dynamics
+                                                                                                                                       recurrent neural networks,
+                                                                                                                                       fixed points, attractors, …
+
+                                                                                         Encoding models
+                                                                                         GLMs, reduced                   Quantify relation between neural
+                                      Relating neural activity to                        rank regression…                dynamics, stimuli and behaviors
+                                      task variables                                                                     Prediction on test trials with
+                                                                                         Decoding models                 manipulations
+                                      (Fig. 3)
+                                                                                         linear, nonlinear,              Cross -validation & pitfalls
+
+
+
+
+                                                                                                                                                                          Downloaded from https://www.science.org on July 14, 2026
+                                                                                         probabilistic
+
+
+Fig. 4. Frameworks for analyzing large-scale recordings. An overview of analysis methods for large-scale recordings corresponding to the different sections
+of this Review.
+
+
+of neurons across time. Neurons do not change           application are similar: The components are             components. A more global approach for this
+their firing rates randomly from one moment             typically compared with stimuli, behaviors, or          exploratory step was recently proposed as
+to the next; instead, their dynamics can be             inferred latent variables to see which compo-           Rastermap, which is a technique for embed-
+predictive of future neural activity, and correla-      nents may be of interest. Once the interesting          ding the main components or clusters of neural
+tions exist between neurons not just instan-            components are found (not necessarily the               activity into a single plot that can be more
+taneously but also at different timelags, on            “top” ones output by the algorithm), further            easily visualized on a single-trial basis (110).
+multiple timescales. Could these spatiotemporal         exploratory analyses consist of plotting tra-
+correlations be the result of an intrinsic dyna-        jectories in pairwise component plots and               Encoding and decoding models
+mical system, and can we uncover the rules              annotating those trajectories with various              In the previous sections, we discussed several
+of the dynamics from the observed neural                information (105–108). Success is typically             exploratory analyses and various unsupervised
+patterns? This question has motivated much              defined by the ability to identify scientifically       models that can be fit directly to neural data
+research into comparing neural network sim-             meaningful patterns in such plots and is usually        and potentially related back to stimuli and
+ulations with neural data (91–94) or inferring          followed by quantifications such as those des-          behaviors. For the rest of this Review, we
+directly from data temporal structure and               cribed in the next section.                             discuss encoding and decoding models, which
+complex dynamical systems (62–66, 95). How-                One caveat of this approach is that the              can more directly relate neural activity to ob-
+ever, fully reviewing that work is beyond the           components are often not distinctly identifia-          served and latent variables. For example, one
+scope of this Review. Further progress may              ble across animals or sessions. For example,            may ask whether neurons across the mouse
+take inspiration from the relatively new field          component 2 in one animal may actually be               brain encode sensory, motor, and/or feedback
+of neural ordinary differential equations (ODEs)        component 3 in another, or may not even be              information, and this evaluation can be per-
+(96), which has recently found applicability in         found at all. This is not necessarily attribut-         formed on a per-region basis (40). Alternatively,
+neuroscience (97).                                      able to variations across animals but rather            one may ask how much information a sensory
+                                                        to the similarity of most dimensionality reduc-         neuronal population such as V1 contains about
+Relating neural structure to task variables             tion methods: Similar model performance can             the orientation of a drifting grating, as done in
+This Review has described methods that try              be obtained when the components are rotated             our study (56). These types of goals can be
+to link intrinsically generated neural dynamics         or otherwise mixed together, which prevents             achieved with encoding and decoding models,
+to neural population activity through various           a single solution from dominating the cost              respectively, which we discuss next, followed
+forms of dimensionality reduction and model-            function landscape (59, 109). Various approaches        by a section on the statistical caveats that arise
+ing. However, dimensionality reduction can              exist to improve identifiability, usually by plac-      from doing such analyses at scale.
+also be used for exploratory analyses—for               ing constraints such as sparsity, orthogonality,
+example, to help in identifying the effect of           maximum variance ordering, or eigenvalue                Encoding models
+observed or latent variables such as attentional        decompositions. Another caveat of dimension-            Suppose we wanted to show that a particular
+modulation or reward anticipation, which may            ality reduction is that it requires checking            population of neurons strongly encodes some
+not be immediately evident otherwise. Regard-           potentially very many components to find                variables of interest, such as behaviors and
+less of what specific dimensionality reduction          ones with interesting structure and may also            stimuli. We could construct an appropriate
+method is used (98–104), the steps following its        require pairwise scatter plots between these            mathematical function that is based on those
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)   8 November 2024                                                                                          5 of 9
+RES EARCH | R E V I E W
+
+
+variables—an encoding model—fit it to some              more powerful nonlinear models such as con-          in an environment. However, if an insufficient
+training data from the neural responses, and            volutional neural networks (111, 124–126) or         number of neurons or trials is recorded, the
+use the fitted model to predict responses on            even transformers, which are typically applied       error is more likely to simply represent decoder
+test trials (Fig. 3A). In recent work, we did just      in a self-supervised manner (127, 128).              noise, which retains the structure of the noise
+that to predict neural responses in superficial                                                              on the training trials. When similarities in
+cortex on the basis of orofacial behaviors and          Decoding methods                                     noise structure exist between a test and a
+found that we could predict ~55% of the                 Another way to show that a neural popula-            train trial, the decoder will output predictions
+explainable variance (not accounting for single-        tion encodes an external variable is to decode       on that test trial that resemble the training
+neuron variability) (111). This was only possible       that variable from the population activity on        trial. This type of noise cannot be distinguished
+because we could fit encoding models to a large         test trials (Fig. 3B). Either actions or stimuli     from real signal, unless a very large number
+population of simultaneously recorded neu-              can be decoded, in continuous-time or on a           of trials and neurons is available. However,
+rons, thus allowing us to fit bigger models,            trial-by-trial basis (112, 129–134). Performance     with sufficiently many neurons and trials, the
+with more parameters and more predictive                is always measured on a test set of time points      decoding error may approach zero in at least
+power. In this case, performance continued to           or trials not used for training the decoder. The     some scenarios (75), in which case the decoder
+improve until reaching around 10,000 simul-             degree of decodability of a variable may be          variability can only be noise rather than re-
+taneously recorded neurons. It is also possible         informative in itself, especially when analyzed      presenting internal uncertainty. Thus, a high
+to use encoding models for linking neural data          across time or spatial locations or when com-        bar needs to be cleared before a decoding error
+to latent variables such as decision variables,         pared across brain areas, cell types, or exper-      can be interpreted as perceptual uncertainty;
+confidence, expectations, beliefs, behavioral           imental manipulations (106, 135–138). Linear         further, perceptual uncertainty may instead
+states, policies, or internal time estimates            decoding of abstract variables such as image         be encoded and used in different ways by
+(65, 80, 95, 103, 112). To do so, one must              categories may be used as evidence for neural        the brain (145). Generally, large-scale record-
+first construct a behavioral model to estimate          computations that perform input untangling           ings may allow any variable of interest to be
+the latent variables from observable ones then          and increase representational invariance (139).      decoded with sufficiently many neurons, and
+
+
+
+
+                                                                                                                                                                    Downloaded from https://www.science.org on July 14, 2026
+use these estimates as predictors (112).                The scaling of the error as the number of neu-       this may diminish the role of decoding analyses
+   Encoding models can also be used to dis-             rons and trials increases can also be informa-       for analyzing neural data.
+ambiguate the effect of correlated variables on         tive. It has been shown that in some cortical           Simple analyses are also not immune from
+neural activity. For example, decision-making           sensory systems, the stimulus decoding error         statistical pitfalls, especially when applied to
+signals are often highly correlated to move-            approaches zero, which is inconsistent with          large-scale neural data. These pitfalls generally
+ment signals, which makes it difficult to dis-          some information theory–based explanations           arise from the variability of single neurons,
+ambiguate whether a neuron in the brain                 for the origins of perceptual errors (Fig. 3A)       which makes the estimation of their param-
+correlates with the former or the latter. An            (56). When the decoding error does asymptote         eters noisy. This estimation thus becomes a
+encoding model can separate the contribu-               at a nonzero value, the deviations of the de-        statistical problem and must be treated with
+tions of these signals, as long as the signals          coder from the true stimulus may be indicative       statistical rigor. As a simple example, consider
+have sufficient variability over trials to provide      of internal variability and can be interpreted       the case of sorting neurons in a raster plot ac-
+enough statistical power. This was done in              with respect to behaviors such as those re-          cording to their latency of firing after a stimulus
+multiple studies to show that whereas move-             porting a perceptual state in trained animals        (Fig. 3C). When the data are displayed on the
+ment signals were widely distributed across             (140). Last, the decoder may be used to “de-         trials that were used to obtain the sorting
+the brain, decision-making signals were much            code” fully internally generated neural activ-       (training trials), it appears that the neurons
+more spatially restricted (40, 113). Thus, one          ity such as that which occurs during replay          fire in an orderly sequence. However, this
+must be careful not to wrongly interpret these          or during planning in the hippocampus or             can be a consequence of overfitting to noisy
+movement correlates as correlates of decisions          HVC (Fig. 3B) (141, 142).                            data, and the same ordering may give com-
+(113–115) or as correlates of behavior-evoking                                                               pletely random latencies or positions on test
+stimuli such as sounds (116, 117). It is also not       Statistical pitfalls for large-scale analyses        trials from the same experimental condition.
+possible without perturbation studies to know           Large-scale analyses have several pitfalls that      Few studies perform this analysis in a cross-
+whether these neural representations are                can be overcome by using more rigorous me-           validated way; an example of the correct
+causally driving movements or if they just              thodology. To start, it is important to reduce       approach is provided in (146).
+represent motor efference and proprioception.           the statistical dependence between testing and          Many such scenarios exist, and they may
+   Encoding models can take a wide range of             training data points as much as possible, which      not be easy to recognize. Consider the case of
+mathematical forms. For large-scale neural              may not be easy to achieve (143). For example,       constructing population tuning curves by align-
+activity, a particularly effective class of encod-      slowly varying behavioral variables (such as         ing and averaging single-neuron tuning curves
+ing models can be built by using reduced rank           arousal or pose) may appear to be decodable          (Fig. 3C). Implicit in this process is the selection
+regression or canonical correlation analysis,           on test data if both the neural activity and         of the preferred stimulus for each neuron,
+which can capture the relation between a                the behavior contain slow timescales, which          which is similar to the process of selecting
+large number of inputs and outputs by using             thus create “nonsense” correlations (144). To        the best latency in the previous example. Thus,
+a small number of intermediate linear or non-           reduce the dependence between train and              a similar bias exists on training trials, in which
+linear combinations (21, 118, 119). A different         test data, time points or trials can be split into   an apparent sensory response may simply be
+class of encoding models can capture the rela-          temporally extended blocks, and each block           due to overfitting. When a genuine sensory
+tions between neural data and discrete tem-             may be assigned randomly to either train or          response is present, it may appear larger on
+poral events such as sensory cues or reward             test data (21, 111, 143).                            the training trials than it really is. These biases
+times by using a set of predefined basis func-             The interpretation of the decoding error          are typically eliminated or much reduced on
+tions. When appropriately weighted, these               can also be a major pitfall because this error       test trials. The biases might be particularly
+basis functions define the temporally extended          is sometimes assumed to represent neuronal           difficult to detect in the context of manipu-
+nature of neural responses to discrete events           uncertainty about a decoded stimulus, about          lations. In a hypothetical scenario, if the pre-
+(39, 40, 120–123). Encoding models can also be          spatial locations, or about latent reward states     ferred stimulus is found by using the control
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)   8 November 2024                                                                                   6 of 9
+RES EARCH | R E V I E W
+
+
+condition, the tuning curves after a manipula-          new mathematical concepts and analysis tech-                               20. M. Pachitariu et al., Suite2p: Beyond 10,000 neurons with
+tion may appear wider and smaller in ampli-             niques. Summer schools such as the Neuro-                                      standard two-photon microscopy. bioRxiv 061507 [Preprint]
+                                                                                                                                       (2016); https://doi.org/10.1101/061507.
+tude relative to the training trials, when their        match Academy offer good opportunities for                                 21. C. Stringer et al., Spontaneous behaviors drive
+width could be unchanged and their ampli-               training in data science methods specifically                                  multidimensional, brainwide activity. Science 364, 255
+tude increased when correctly compared with             with neuroscience applications (150). Now                                      (2019). doi: 10.1126/science.aav7893; pmid: 31000656
+                                                                                                                                   22. D. Aharoni, B. S. Khakh, A. J. Silva, P. Golshani, All the light
+test trials of the “control” condition. Methods         may be a good time for both newcomers and                                      that we can see: A new era in miniaturized microscopy. Nat.
+to detect and address such scenarios are un-            established neuroscientists to refresh and update                              Methods 16, 11–13 (2019). doi: 10.1038/s41592-018-0266-x;
+fortunately not sufficiently widespread.                their knowledge of mathematical concepts                                       pmid: 30573833
+                                                                                                                                   23. W. Zong et al., Large-scale two-photon calcium imaging in
+                                                        and techniques.                                                                freely moving mice. Cell 185, 1240–1256.e30 (2022).
+Discussion
+                                                                                                                                       doi: 10.1016/j.cell.2022.02.017; pmid: 35305313
+                                                        RE FERENCES AND NOTES
+This Review can be used as a guide for sci-                                                                                        24. Y. Zhang et al., Fast and sensitive GCaMP calcium indicators
+                                                        1.    T.-W. Chen et al., Ultrasensitive fluorescent proteins for               for imaging neural populations. Nature 615, 884–891 (2023).
+entists with large-scale neural data (Fig. 4,                 imaging neuronal activity. Nature 499, 295–300 (2013).                   doi: 10.1038/s41586-023-05828-9; pmid: 36922596
+graphical summary). Many of the methods                       doi: 10.1038/nature12354; pmid: 23868258                             25. G. J. Broussard, L. Petreanu, Eavesdropping wires: Recording
+described above can be used in an exploratory           2.    N. J. Sofroniew, D. Flickinger, J. King, K. Svoboda, A large             activity in axons using genetically encoded calcium
+                                                              field of view two-photon mesoscope with subcellular                      indicators. J. Neurosci. Methods 360, 109251 (2021).
+fashion to identify new relations between                     resolution for in vivo imaging. eLife 5, e14472 (2016).                  doi: 10.1016/j.jneumeth.2021.109251; pmid: 34119572
+neural activity and behavior or stimuli. Quan-                doi: 10.7554/eLife.14472; pmid: 27300105                             26. Y. Chen et al., Soma-targeted imaging of neural circuits by
+tification can typically be done with encoding          3.    J. J. Jun et al., Fully integrated silicon probes for high-density       ribosome tethering. Neuron 107, 454–469.e6 (2020).
+                                                              recording of neural activity. Nature 551, 232–236 (2017).                doi: 10.1016/j.neuron.2020.05.005; pmid: 32574560
+or decoding analyses, which can be applied                    doi: 10.1038/nature24636; pmid: 29120427                             27. T. Ebina et al., Two-photon imaging of neuronal activity in
+directly to neural data or to the reduced               4.    N. A. Steinmetz et al., Neuropixels 2.0: A miniaturized high-            motor cortex of marmosets during upper-limb movement
+components found by use of unsupervised                       density probe for stable, long-term brain recordings. Science            tasks. Nat. Commun. 9, 1879 (2018). doi: 10.1038/s41467-
+                                                              372, eabf4588 (2021). doi: 10.1126/science.abf4588;                      018-04286-6; pmid: 29760466
+analysis methods. There are numerous pit-                     pmid: 33859006                                                       28. A. K. Garg, P. Li, M. S. Rashid, E. M. Callaway, Color and
+falls that must be avoided when quantifying             5.    E. M. Trautmann et al., Large-scale high-density brain-wide              orientation are jointly coded and spatially organized in
+high-dimensional data with complex analyses,                  neural recording in nonhuman primates. bioRxiv 526664
+
+
+
+
+                                                                                                                                                                                                          Downloaded from https://www.science.org on July 14, 2026
+                                                                                                                                       primate primary visual cortex. Science 364, 1275–1279
+                                                              [Preprint] (2023); https://doi.org/10.1101/2023.02.01.526664.            (2019). doi: 10.1126/science.aaw5868; pmid: 31249057
+and these pitfalls may be difficult to identify         6.    D. J. Tolhurst, J. A. Movshon, A. F. Dean, The statistical           29. P. Zhou et al., Efficient and accurate extraction of in vivo
+without sufficient experience. Future theoret-                reliability of signals in single neurons in cat and monkey               calcium signals from microendoscopic video data. eLife 7,
+ical and computational studies may be espe-                   visual cortex. Vision Res. 23, 775–785 (1983). doi: 10.1016/             e28728 (2018). doi: 10.7554/eLife.28728; pmid: 29469809
+                                                              0042-6989(83)90200-6; pmid: 6623937
+cially helpful to address these problems, but                                                                                      30. A. Giovannucci et al., CaImAn an open source tool for
+                                                        7.    J. Fiser, C. Chiu, M. Weliky, Small modulation of ongoing                scalable calcium imaging data analysis. eLife 8, e38173
+they must target an audience of experimental                  cortical dynamics by sensory input during natural vision.                (2019). doi: 10.7554/eLife.38173; pmid: 30652683
+scientists. Some examples exist of statistical                Nature 431, 573–578 (2004). doi: 10.1038/nature02907;                31. S. E. J. de Vries et al., A large-scale standardized
+studies with a combination of simple, intuitive               pmid: 15457262                                                           physiological survey reveals functional organization of the
+                                                        8.    T. Hafting, M. Fyhn, S. Molden, M.-B. Moser, E. I. Moser,
+explanations (147, 148), but an expansion of                  Microstructure of a spatial map in the entorhinal cortex.
+                                                                                                                                       mouse visual cortex. Nat. Neurosci. 23, 138–151 (2020).
+                                                                                                                                       doi: 10.1038/s41593-019-0550-9; pmid: 31844315
+the statistical neuroscience field will be neces-             Nature 436, 801–806 (2005). doi: 10.1038/nature03721;                32. E. H. Lyall et al., Synthesis of a comprehensive population
+sary to avoid the numerous pitfalls that large-               pmid: 15965463                                                           code for contextual features in the awake sensory cortex.
+                                                        9.    A. C. Paulk et al., Large-scale neural recordings with single            eLife 10, e62687 (2021). doi: 10.7554/eLife.62687;
+scale data introduces.                                        neuron resolution using Neuropixels probes in human cortex.              pmid: 34723796
+   Looking forward, animal neuroscience is                    Nat. Neurosci. 25, 252–263 (2022). doi: 10.1038/s41593-              33. L. Feigin, G. Tasaka, I. Maor, A. Mizrahi, Sparse coding in
+gaining a renewed focus on more complex and                   021-00997-0; pmid: 35102333                                              temporal association cortex improves complex sound
+                                                        10.   J. E. Chung et al., High-density single-unit human cortical              discriminability. J. Neurosci. 41, 7048–7064 (2021).
+more ethological behaviors—for example, in                    recordings using the Neuropixels probe. Neuron 110,                      doi: 10.1523/JNEUROSCI.3167-20.2021; pmid: 34244361
+freely moving animals in large environments                   2409–2421.e3 (2022). doi: 10.1016/j.neuron.2022.05.007;              34. J. H. Siegle et al., Survey of spiking in the mouse visual
+(149). Large-scale neural recordings in these                 pmid: 35679860                                                           system reveals functional hierarchy. Nature 592, 86–92
+                                                        11.   J. Müller et al., High-resolution CMOS MEA platform to study             (2021). doi: 10.1038/s41586-020-03171-x; pmid: 33473216
+contexts are becoming possible, potentially                   neurons at subcellular, cellular, and network levels. Lab Chip       35. S. Schröder et al., Arousal modulates retinal output. Neuron
+with continuous 24/7 monitoring of neural                     15, 2767–2780 (2015). doi: 10.1039/C5LC00133A;                           107, 487–495.e9 (2020). doi: 10.1016/j.neuron.2020.04.026;
+activity and behavior. The large variability in               pmid: 25973786                                                           pmid: 32445624
+                                                        12.   S. Zhao et al., Tracking neural activity from the same cells         36. A. Fratzl et al., Flexible inhibitory control of visually evoked
+these scenarios may create insurmountable
+                                                              during the entire adult life of mice. Nat. Neurosci. 26,                 defensive behavior by the ventral lateral geniculate nucleus.
+difficulties for most of the analysis methods                 696–710 (2023). doi: 10.1038/s41593-023-01267-x;                         Neuron 109, 3810–3822.e9 (2021). doi: 10.1016/
+we describe above and will require innova-                    pmid: 36804648                                                           j.neuron.2021.09.003; pmid: 34614420
+tion. The large number of potential nuisance            13.   C.-H. Chiang et al., Development of a neural interface for           37. Y. Liu et al., Mapping visual functions onto molecular cell
+                                                              high-definition, long-term recording in rodents and                      types in the mouse superior colliculus. Neuron 111, 1876–1886.e5
+variables (such asenvironmental variables or                  nonhuman primates. Sci. Transl. Med. 12, eaay4682 (2020).                (2023). doi: 10.1016/j.neuron.2023.03.036; pmid: 37086721
+spontaneous movements) are very difficult                     doi: 10.1126/scitranslmed.aay4682; pmid: 32269166                    38. G. Matteucci et al., Cortical sensory processing across
+to control for in such scenarios. Model-based           14.   M. Pachitariu, S. Sridhar, J. Pennington, C. Stringer, Spike             motivational states during goal-directed behavior. Neuron
+                                                              sorting with Kilosort4. Nat. Methods 21, 914–921 (2024).                 110, 4176–4193.e10 (2022). doi: 10.1016/
+approaches will be needed for refining and                    doi: 10.1038/s41592-024-02232-7; pmid: 38589517                          j.neuron.2022.09.032; pmid: 36240769
+testing hypotheses iteratively through manip-           15.   J. E. Chung et al., A fully automated approach to spike              39. W. E. Allen et al., Thirst regulates motivated behavior through
+ulations of the environment, task, or the neural              sorting. Neuron 95, 1381–1394.e6 (2017). doi: 10.1016/                   modulation of brainwide neural population dynamics. Science
+                                                              j.neuron.2017.08.030; pmid: 28910621                                     364, 253 (2019). doi: 10.1126/science.aav3932;
+activity.                                               16.   J. J. Jun et al., Real-time spike sorting platform for high-             pmid: 30948440
+   For more standard neuroscience experiments,                density extracellular probes with ground-truth validation and        40. N. A. Steinmetz, P. Zatka-Haas, M. Carandini, K. D. Harris,
+there will still likely be substantial future                 drift correction. bioRxiv 101030 [Preprint] (2017);                      Distributed coding of choice, action and engagement across
+                                                              https://doi.org/10.1101/101030.                                          the mouse brain. Nature 576, 266–273 (2019). doi: 10.1038/
+progress in analysis methods. The obstacles in          17.   C. Grienberger, A. Giovannucci, W. Zeiger, C. Portera-Cailliau,          s41586-019-1787-x; pmid: 31776518
+the acquisition of such data have been sub-                   Two-photon calcium imaging of neuronal activity. Nat. Rev.           41. J. B. Issa, B. A. Radvansky, F. Xuan, D. A. Dombeck, Lateral
+stantially reduced, and many laboratories are                 Methods Primers 2, 67 (2022). doi: 10.1038/s43586-022-                   entorhinal cortex subpopulations represent experiential
+                                                              00147-1; pmid: 38124998                                                  epochs surrounding reward. Nat. Neurosci. 27, 536–546
+finding themselves with more data than they                                                                                            (2024). doi: 10.1038/s41593-023-01557-4; pmid: 38272968
+                                                        18.   W. Denk, J. H. Strickler, W. W. Webb, Two-photon laser
+know what to do with. Establishing collabo-                   scanning fluorescence microscopy. Science 248, 73–76                 42. D. A. Aponte et al., Recurrent network dynamics shape
+rations with computational and theoretical                    (1990). doi: 10.1126/science.2321027; pmid: 2321027                      direction selectivity in primary auditory cortex. Nat. Commun.
+                                                        19.   M. B. Ahrens, M. B. Orger, D. N. Robson, J. M. Li, P. J. Keller,         12, 314 (2021). doi: 10.1038/s41467-020-20590-6;
+scientists will be key to taking advantage of
+                                                              Whole-brain functional imaging at cellular resolution using              pmid: 33436635
+this data. To drive faster progress in this field,            light-sheet microscopy. Nat. Methods 10, 413–420 (2013).             43. A. J. Duszkiewicz et al., Local origin of excitatory-inhibitory
+experimental neuroscientists will need to adopt               doi: 10.1038/nmeth.2434; pmid: 23524393                                  tuning equivalence in a cortical network. Nat. Neurosci. 27,
+
+
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)   8 November 2024                                                                                                                       7 of 9
+RES EARCH | R E V I E W
+
+
+      782–792 (2024). doi: 10.1038/s41593-024-01588-5;                         and gasping. Nat. Neurosci. 27, 259–271 (2024).                          Proc. Natl. Acad. Sci. U.S.A. 112, 13455–13460 (2015);
+      pmid: 38491324                                                           doi: 10.1038/s41593-023-01520-3; pmid: 38182835                          doi: 10.1073/pnas.1506407112; pmid: 26487684
+44.   W. Xiao, S. Sharma, G. Kreiman, M. S. Livingstone, Feature-        65.   S. Wang, R. Falcone, B. Richmond, B. B. Averbeck, Attractor         87. R. Chaudhuri, B. Gerçek, B. Pandey, A. Peyrache, I. Fiete, The
+      selective responses in macaque visual cortex follow eye                  dynamics reflect decision confidence in macaque prefrontal               intrinsic attractor manifold and population dynamics of a
+      movements during natural vision. Nat. Neurosci. 27,                      cortex. Nat. Neurosci. 26, 1970–1980 (2023). doi: 10.1038/               canonical cognitive circuit across waking and sleep. Nat.
+      1157–1166 (2024). doi: 10.1038/s41593-024-01631-5;                       s41593-023-01445-x; pmid: 37798412                                       Neurosci. 22, 1512–1520 (2019). doi: 10.1038/s41593-019-
+      pmid: 38684892                                                     66.   A. R. Khanna et al., Single-neuronal elements of speech                  0460-x; pmid: 31406365
+45.   S. Chen et al., Brain-wide neural activity underlying memory-            production in humans. Nature 626, 603–610 (2024).                   88. E. H. Nieh et al., Geometry of abstract learned knowledge in
+      guided movement. Cell 187, 676–691.e16 (2024).                           doi: 10.1038/s41586-023-06982-w; pmid: 38297120                          the hippocampus. Nature 595, 80–84 (2021). doi: 10.1038/
+      doi: 10.1016/j.cell.2023.12.035; pmid: 38306983                    67.   B. K. Hulse et al., A connectome of the Drosophila central               s41586-021-03652-7; pmid: 34135512
+46.   Q. Gaucher et al., Complexity of frequency receptive fields              complex reveals network motifs suitable for flexible                89. S. A. Koay, A. S. Charles, S. Y. Thiberge, C. D. Brody,
+      predicts tonotopic variability across species. eLife 9,                  navigation and context-dependent action selection. eLife 10,             D. W. Tank, Sequential and efficient neural-population coding
+      e53462 (2020). doi: 10.7554/eLife.53462; pmid: 32420865                  e66039 (2021). doi: 10.7554/eLife.66039; pmid: 34696823                  of complex task information. Neuron 110, 328–349.e11
+47.   L. Zhong et al., Distinct streams for supervised and               68.   E. Marder, D. Bucher, D. J. Schulz, A. L. Taylor, Invertebrate           (2022). doi: 10.1016/j.neuron.2021.10.020; pmid: 34776042
+      unsupervised learning in the visual cortex. bioRxiv 581990               central pattern generation moves along. Curr. Biol. 15,             90. W. Yang et al., Selection of experience for memory by
+      [Preprint] (2024); https://doi.org/10.1101/                              R685–R699 (2005). doi: 10.1016/j.cub.2005.08.022;                        hippocampal sharp wave ripples. Science 383, 1478–1483
+      2024.02.25.581990.                                                       pmid: 16139202                                                           (2024). doi: 10.1126/science.adk8261; pmid: 38547293
+48.   N. Li, K. Daie, K. Svoboda, S. Druckmann, Robust neuronal          69.   A. R. Galgali, M. Sahani, V. Mante, Residual dynamics               91. L. Duncker, M. Sahani, Dynamics on the manifold: Identifying
+      dynamics in premotor cortex during motor planning. Nature                resolves recurrent contributions to neural computation. Nat.             computational dynamical activity from neural population
+      532, 459–464 (2016). doi: 10.1038/nature17643;                           Neurosci. 26, 326–338 (2023). doi: 10.1038/s41593-022-                   recordings. Curr. Opin. Neurobiol. 70, 163–170 (2021).
+      pmid: 27074502                                                           01230-2; pmid: 36635498                                                  doi: 10.1016/j.conb.2021.10.014; pmid: 34837752
+49.   D. J. O’Shea et al., Direct neural perturbations reveal a          70.   J. Soldado-Magraner, V. Mante, M. Sahani, Inferring context-        92. G. Bondanelli, T. Deneux, B. Bathellier, S. Ostojic, Network
+      dynamical mechanism for robust computation. bioRxiv                      dependent computations through linear approximations of                  dynamics underlying OFF responses in the auditory cortex.
+      520768 [Preprint] (2022); https://doi.org/10.1101/                       prefrontal cortex dynamics. bioRxiv 527389 [Preprint]                    eLife 10, e53151 (2021). doi: 10.7554/eLife.53151;
+      2022.12.16.520768.                                                       (2023); https://doi.org/10.1101/2023.02.06.527389.                       pmid: 33759763
+50.   A. J. Zimnik, M. M. Churchland, Independent generation of          71.   R. J. Gardner et al., Toroidal topology of population activity in   93. B. Akitake et al., Amplified cortical neural responses as
+      sequence elements by motor cortex. Nat. Neurosci. 24,                    grid cells. Nature 602, 123–128 (2022). doi: 10.1038/s41586-             animals learn to use novel activity patterns. Curr. Biol. 33,
+      412–424 (2021). doi: 10.1038/s41593-021-00798-5;                         021-04268-7; pmid: 35022611                                              2163–2174.e4 (2023). doi: 10.1016/j.cub.2023.04.032;
+      pmid: 33619403                                                     72.   L. Avitan et al., Spontaneous and evoked activity patterns               pmid: 37148876
+
+
+
+
+                                                                                                                                                                                                                            Downloaded from https://www.science.org on July 14, 2026
+51.   S. Han, F. Helmchen, Behavior-relevant top-down cross-                   diverge over development. eLife 10, e61942 (2021).                  94. B. Wang et al., Unsupervised restoration of a complex learned
+      modal predictions in mouse neocortex. Nat. Neurosci. 27,                 doi: 10.7554/eLife.61942; pmid: 33871351                                 behavior after large-scale neuronal perturbation. Nat.
+      298–308 (2024). doi: 10.1038/s41593-023-01534-x;                   73.   L. Avitan, C. Stringer, Not so spontaneous: Multi-dimensional            Neurosci. 27, 1176–1186 (2024). doi: 10.1038/s41593-024-
+      pmid: 38177341                                                           representations of behaviors and context in sensory areas.               01630-6; pmid: 38684893
+52.   W. Yang, S. L. Tipparaju, G. Chen, N. Li, Thalamus-driven                Neuron 110, 3064–3075 (2022). doi: 10.1016/                         95. A. Nair et al., An approximate line attractor in the
+      functional populations in frontal cortex support decision-               j.neuron.2022.06.019; pmid: 35863344                                     hypothalamus encodes an aggressive state. Cell 186,
+      making. Nat. Neurosci. 25, 1339–1352 (2022). doi: 10.1038/         74.   P. Gao et al., A theory of multineuronal dimensionality,                 178–193.e15 (2023). doi: 10.1016/j.cell.2022.11.027;
+      s41593-022-01171-w; pmid: 36171427                                       dynamics and measurement. bioRxiv 214262 [Preprint]                      pmid: 36608653
+53.   A.-K. Eiselt et al., Hunger or thirst state uncertainty is               (2017); https://doi.org/10.1101/214262.                             96. R. T. Chen, Y. Rubanova, J. Bettencourt, D. K. Duvenaud,
+      resolved by outcome evaluation in medial prefrontal cortex to      75.   C. Stringer, M. Pachitariu, N. Steinmetz, M. Carandini,                  Neural ordinary differential equations. Adv. Neural Inf.
+      guide decision-making. Nat. Neurosci. 24, 907–912 (2021).                K. D. Harris, High-dimensional geometry of population                    Process. Syst. 31, 6572 (2018).
+      doi: 10.1038/s41593-021-00850-4; pmid: 33972802                          responses in visual cortex. Nature 571, 361–365 (2019).             97. T. D. Kim, T. Z. Luo, J. W. Pillow, C. D. Brody, “Inferring latent
+54.   D. Kobak et al., Demixed principal component analysis of                 doi: 10.1038/s41586-019-1346-5; pmid: 31243367                           dynamics underlying neural population activity via neural
+      neural population data. eLife 5, e10989 (2016). doi: 10.7554/      76.   F. Lanore, N. A. Cayco-Gajic, H. Gurnani, D. Coyle, R. A. Silver,        differential equations” in International Conference on Machine
+      eLife.10989; pmid: 27067378                                              Cerebellar granule cell axons support high-dimensional                   Learning (PMLR, 2021), p. 5551.
+55.   O. G. Sani, H. Abbaspourazad, Y. T. Wong, B. Pesaran,                    representations. Nat. Neurosci. 24, 1142–1150 (2021).               98. B. A. Sauerbrei et al., Cortical pattern generation during
+      M. M. Shanechi, Modeling behaviorally relevant neural                    doi: 10.1038/s41593-021-00873-x; pmid: 34168340                          dexterous movement is input-driven. Nature 577, 386–391
+      dynamics enabled by preferential subspace identification.          77.   N. C. L. Kong, E. Margalit, J. L. Gardner, A. M. Norcia,                 (2020). doi: 10.1038/s41586-019-1869-9; pmid: 31875851
+      Nat. Neurosci. 24, 140–149 (2021). doi: 10.1038/s41593-020-              Increasing neural network robustness improves match to              99. M. K. Leonard et al., Large-scale single-neuron speech sound
+      00733-0; pmid: 33169030                                                  macaque V1 eigenspectrum, spatial frequency preference                   encoding across the depth of human cortex. Nature 626,
+56.   C. Stringer, M. Michaelos, D. Tsyboulski, S. E. Lindo,                   and predictivity. PLOS Comput. Biol. 18, e1009739 (2022).                593–602 (2024). doi: 10.1038/s41586-023-06839-2;
+      M. Pachitariu, High-precision coding in visual cortex. Cell 184,         doi: 10.1371/journal.pcbi.1009739; pmid: 34995280                        pmid: 38093008
+      2767–2778.e15 (2021). doi: 10.1016/j.cell.2021.03.042;             78.   C. F. Cadieu et al., Deep neural networks rival the                 100. C. Pandarinath et al., Inferring single-trial neural population
+      pmid: 33857423                                                           representation of primate IT cortex for core visual object               dynamics using sequential auto-encoders. Nat. Methods 15,
+57.   W.-C. Jiang, S. Xu, J. T. Dudman, Hippocampal                            recognition. PLOS Comput. Biol. 10, e1003963 (2014).                     805–815 (2018). doi: 10.1038/s41592-018-0109-9;
+      representations of foraging trajectories depend upon spatial             doi: 10.1371/journal.pcbi.1003963; pmid: 25521294                        pmid: 30224673
+      context. Nat. Neurosci. 25, 1693–1705 (2022). doi: 10.1038/        79.   B. Dudok et al., Recruitment and inhibitory action of               101. A. Pellegrino, H. Stein, N. A. Cayco-Gajic, Dimensionality
+      s41593-022-01201-7; pmid: 36446934                                       hippocampal axo-axonic cells during behavior. Neuron 109,                reduction beyond neural subspaces with slice tensor
+58.   R. Sasaki et al., Balancing risk-return decisions by                     3838–3850.e8 (2021). doi: 10.1016/j.neuron.2021.09.033;                  component analysis. Nat. Neurosci. 27, 1199–1210 (2024).
+      manipulating the mesofrontal circuits in primates. Science               pmid: 34648750                                                           doi: 10.1038/s41593-024-01626-2; pmid: 38710876
+      383, 55–61 (2024). doi: 10.1126/science.adj6645;                   80.   V. Samborska, J. L. Butler, M. E. Walton, T. E. J. Behrens,         102. F. Zhu et al., A deep learning framework for inference of
+      pmid: 38175903                                                           T. Akam, Complementary task representations in                           single-trial neural population dynamics from calcium imaging
+59.   B. M. Yu et al., Gaussian-process factor analysis for low-               hippocampus and prefrontal cortex for generalizing the                   with subframe temporal resolution. Nat. Neurosci. 25,
+      dimensional single-trial analysis of neural population activity.         structure of problems. Nat. Neurosci. 25, 1314–1326 (2022).              1724–1734 (2022). doi: 10.1038/s41593-022-01189-0;
+      J. Neurophysiol. 102, 614–635 (2009). doi: 10.1152/                      doi: 10.1038/s41593-022-01149-8; pmid: 36171429                          pmid: 36424431
+      jn.90941.2008; pmid: 19357332                                      81.   S. L. Pashkovski et al., Structure and flexibility in cortical      103. E. L. Sylwestrak et al., Cell-type-specific population
+60.   A. H. Williams et al., Unsupervised discovery of demixed,                representations of odour space. Nature 583, 253–258                      dynamics of diverse reward computations. Cell 185,
+      low-dimensional neural dynamics across multiple                          (2020). doi: 10.1038/s41586-020-2451-1; pmid: 32612230                   3568–3587.e27 (2022). doi: 10.1016/j.cell.2022.08.019;
+      timescales through tensor component analysis. Neuron 98,           82.   H. C. Barron et al., Neuronal computation underlying                     pmid: 36113428
+      1099–1115.e8 (2018). doi: 10.1016/j.neuron.2018.05.015;                  inferential reasoning in humans and mice. Cell 183, 228–243.        104. S. Schneider, J. H. Lee, M. W. Mathis, Learnable latent
+      pmid: 29887338                                                           e21 (2020). doi: 10.1016/j.cell.2020.08.035; pmid: 32946810              embeddings for joint behavioural and neural analysis. Nature
+61.   L. Duncker, M. Sahani, Temporal alignment and latent gaussian      83.   A. H. Williams, E. Kunz, S. Kornblith, S. W. Linderman,                  617, 360–368 (2023). doi: 10.1038/s41586-023-06031-6;
+      process factor inference in population spike trains. bioRxiv             Generalized shape metrics on neural representations. Adv.                pmid: 37138088
+      331751 [Preprint] (2018); https://doi.org/10.1101/331751.                Neural Inf. Process. Syst. 34, 4738–4750 (2021).                    105. J. Brown et al., Spatial integration during active tactile
+62.   M. Genkin, O. Hughes, T. A. Engel, Learning non-stationary               pmid: 38170102                                                           sensation drives orientation perception. Neuron 109,
+      Langevin dynamics from stochastic observations of latent           84.   M. Safaie et al., Preserved neural dynamics across animals               1707–1720.e7 (2021). doi: 10.1016/j.neuron.2021.03.020;
+      trajectories. Nat. Commun. 12, 5986 (2021). doi: 10.1038/                performing similar behaviour. Nature 623, 765–771 (2023).                pmid: 33826906
+      s41467-021-26202-1; pmid: 34645828                                       doi: 10.1038/s41586-023-06714-0; pmid: 37938772                     106. C. A. Zimmerman et al., A neural mechanism for learning from
+63.   O. Karniol-Tambour et al., “Modeling state-dependent               85.   L. N. Driscoll, L. Duncker, C. D. Harvey, Representational drift:        delayed postingestive feedback. bioRxiv 561214 [Preprint]
+      communication between brain regions with switching                       Emerging theories for continual learning and experimental                (2023); https://doi.org/10.1101/2023.10.06.561214.
+      nonlinear dynamical systems” in The Twelfth International                future directions. Curr. Opin. Neurobiol. 76, 102609 (2022).        107. L. Petrucco et al., Neural dynamics and architecture of the
+      Conference on Learning Representations (2023).                           doi: 10.1016/j.conb.2022.102609; pmid: 35939861                          heading direction circuit in zebrafish. Nat. Neurosci. 26,
+64.   N. E. Bush, J.-M. Ramirez, Latent neural population dynamics       86.   C. Giusti, E. Pastalkova, C. Curto, V. Itskov, Clique topology           765–773 (2023). doi: 10.1038/s41593-023-01308-5;
+      underlying breathing, opioid-induced respiratory depression              reveals intrinsic geometric structure in neural correlations.            pmid: 37095397
+
+
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)                    8 November 2024                                                                                                                       8 of 9
+RES EARCH | R E V I E W
+
+
+108. M. H. Plitt, L. M. Giocomo, Experience-dependent contextual         124. K. Franke et al., State-dependent pupil dilation rapidly shifts   140. V. B. McGinty, S. M. Lupkin, Behavioral read-out from
+     codes in the hippocampus. Nat. Neurosci. 24, 705–714                     visual feature selectivity. Nature 610, 128–134 (2022).                population value signals in primate orbitofrontal cortex. Nat.
+     (2021). doi: 10.1038/s41593-021-00816-6; pmid: 33753945                  doi: 10.1038/s41586-022-05270-3; pmid: 36171291                        Neurosci. 26, 2203–2212 (2023). doi: 10.1038/s41593-023-
+109. J. H. Macke et al., Empirical models of spiking in neural           125. S. Sabesan, A. Fragner, C. Bench, F. Drakopoulos,                      01473-7; pmid: 37932464
+     populations. Adv. Neural Inf. Process. Syst. 24, 1350 (2011).            N. A. Lesica, Large-scale electrophysiology and deep learning     141. M. Elmaleh, D. Kranz, A. C. Asensio, F. W. Moll, M. A. Long,
+110. C. Stringer et al., Rastermap: A discovery method for                    reveal distorted neural signal dynamics after hearing loss.            Sleep replay reveals premotor circuit structure for a skilled
+     neural population recordings. Nat. Neurosci. 10.1038/                    eLife 12, e85108 (2023). doi: 10.7554/eLife.85108;                     behavior. Neuron 109, 3851–3861.e4 (2021). doi: 10.1016/
+     s41593-024-01783-4 (2024).                                               pmid: 37162188                                                         j.neuron.2021.09.021; pmid: 34626537
+111. A. Syeda et al., Facemap: A framework for modeling neural           126. J. W. Lovelace et al., Vagal sensory neurons mediate the          142. M. Wang, D. J. Foster, B. E. Pfeiffer, Alternating sequences of
+     activity based on orofacial tracking. Nat. Neurosci. 27, 187–195         Bezold-Jarisch reflex and induce syncope. Nature 623,                  future and past behavior encoded within hippocampal theta
+     (2024). doi: 10.1038/s41593-023-01490-6; pmid: 37985801                  387–396 (2023). doi: 10.1038/s41586-023-06680-7;                       oscillations. Science 370, 247–250 (2020). doi: 10.1126/
+112. F. Cazettes et al., A reservoir of foraging decision variables in        pmid: 37914931                                                         science.abb4151; pmid: 33033222
+     the mouse brain. Nat. Neurosci. 26, 840–849 (2023).                 127. J. Ye, C. Pandarinath, Representation learning for neural         143. F. Nevjen, B. A. Dunn, Insights in neuronal tuning: Navigating
+     doi: 10.1038/s41593-023-01305-8; pmid: 37055628                          population activity with neural data transformers. Neurons             the statistical challenges of autocorrelation and missing
+113. S. Musall, M. T. Kaufman, A. L. Juavinett, S. Gluf,                      Behav. Data Anal. Theory 5, 1–18 (2021). doi: 10.51628/                variables. eLife 13, RP92517 (2024).
+     A. K. Churchland, Single-trial neural dynamics are dominated             001c.27358                                                        144. K. D. Harris, Nonsense correlations in neuroscience. bioRxiv
+     by richly varied movements. Nat. Neurosci. 22, 1677–1686            128. Y. Zhang et al., Towards a “universal translator” for neural           402719 [Preprint] (2020); https://doi.org/10.1101/
+     (2019). doi: 10.1038/s41593-019-0502-4; pmid: 31551604                   dynamics at single-cell, single-spike resolution.                      2020.11.29.402719.
+114. E. Zagha et al., The importance of accounting for movement               arXiv:2407.14668 [q-bio.NC] (2024).                               145. M. Salmasi, M. Sahani, “Learning neural codes for perceptual
+     when relating neuronal activity to sensory and cognitive            129. N. Kriegeskorte, P. K. Douglas, Interpreting encoding and              uncertainty” in 2022 IEEE International Symposium on
+     processes. J. Neurosci. 42, 1375–1382 (2022). doi: 10.1523/              decoding models. Curr. Opin. Neurobiol. 55, 167–179 (2019).            Information Theory (ISIT) (IEEE, 2022), pp. 2463–2468.
+     JNEUROSCI.1919-21.2021; pmid: 35027407                                   doi: 10.1016/j.conb.2019.04.002; pmid: 31039527                        doi: 10.1109/ISIT50566.2022.9834606
+115. S. Tremblay, C. Testard, R. W. DiTullio, J. Inchauspé,              130. J. I. Glaser et al., Machine learning for neural decoding.        146. L. F. Fischer, R. Mojica Soto-Albors, F. Buck, M. T. Harnett,
+     M. Petrides, Neural cognitive signals during spontaneous                 eNeuro 7, ENEURO.0506-19.2020 (2020). doi: 10.1523/                    Representation of visual landmarks in retrosplenial cortex.
+     movements in the macaque. Nat. Neurosci. 26, 295–305                     ENEURO.0506-19.2020; pmid: 32737181                                    eLife 9, e51458 (2020). doi: 10.7554/eLife.51458;
+     (2023). doi: 10.1038/s41593-022-01220-4; pmid: 36536242             131. Y. J. Kim et al., Nonlinear decoding of natural images from            pmid: 32154781
+116. C. Bimbard et al., Behavioral origin of sound-evoked activity            large-scale primate retinal ganglion recordings. Neural           147. G. F. Elsayed, J. P. Cunningham, Structure in neural
+     in mouse visual cortex. Nat. Neurosci. 26, 251–258 (2023).               Comput. 33, 1719–1750 (2021). doi: 10.1162/neco_a_01395;               population recordings: An expected byproduct of simpler
+     doi: 10.1038/s41593-022-01227-x; pmid: 36624279                          pmid: 34411268                                                         phenomena? Nat. Neurosci. 20, 1310–1318 (2017).
+
+
+
+
+                                                                                                                                                                                                                       Downloaded from https://www.science.org on July 14, 2026
+117. M. N. Oude Lohuis, P. Marchesi, U. Olcese, C. M. A. Pennartz,       132. M. Azabou et al., A unified, scalable framework for neural             doi: 10.1038/nn.4617; pmid: 28783140
+     Triple dissociation of visual, auditory and motor processing in          population decoding. Adv. Neural Inf. Process. Syst. 36,          148. R. Kass, The two cultures: Statistics and machine learning in
+     mouse primary visual cortex. Nat. Neurosci. 27, 758–771                  44937 (2024).                                                          science. Obs. Stud. 7, 135–144 (2021). doi: 10.1353/
+     (2024). doi: 10.1038/s41593-023-01564-5; pmid: 38307971             133. N. L. Pettit, X. C. Yuan, C. D. Harvey, Hippocampal place              obs.2021.0000
+118. N. Shahidi et al., Population coding of strategic variables              codes are gated by behavioral engagement. Nat. Neurosci.          149. E. J. Dennis et al., Systems neuroscience of natural behaviors
+     during foraging in freely moving macaques. Nat. Neurosci. 27,            25, 561–566 (2022). doi: 10.1038/s41593-022-01050-4;                   in rodents. J. Neurosci. 41, 911–919 (2021). doi: 10.1523/
+     772–781 (2024). doi: 10.1038/s41593-024-01575-w;                         pmid: 35449355                                                         JNEUROSCI.1877-20.2020; pmid: 33443081
+     pmid: 38443701                                                      134. Y. Xie et al., Geometry of sequence working memory in             150. T. van Viegen et al., Neuromatch academy: Teaching
+119. J. Singh Alvarado et al., Neural dynamics underlying birdsong            macaque prefrontal cortex. Science 375, 632–639 (2022).                computational neuroscience with global accessibility. Trends
+     practice and performance. Nature 599, 635–639 (2021).                    doi: 10.1126/science.abm0204; pmid: 35143322                           Cogn. Sci. 25, 535–538 (2021). doi: 10.1016/
+     doi: 10.1038/s41586-021-04004-1; pmid: 34671166                     135. S. Keshavarzi et al., Multisensory coding of angular head              j.tics.2021.03.018; pmid: 33994097
+120. I. M. Park, M. L. Meister, A. C. Huk, J. W. Pillow, Encoding and         velocity in the retrosplenial cortex. Neuron 110, 532–543.e9
+     decoding in parietal cortex during sensorimotor decision-                (2022). doi: 10.1016/j.neuron.2021.10.031; pmid: 34788632         AC KNOWLED GME NTS
+     making. Nat. Neurosci. 17, 1395–1403 (2014). doi: 10.1038/          136. A. Nagelhus, S. O. Andersson, S. G. Cogno, E. I. Moser,           We thank S. Romani and T. Ahamed for helpful suggestions.
+     nn.3800; pmid: 25174005                                                  M.-B. Moser, Object-centered population coding in CA1 of the      Funding: C.S. and M.P. are funded by the Howard Hughes Medical
+121. P. R. L. Parker, E. T. T. Abe, E. S. P. Leonard, D. M. Martins,          hippocampus. Neuron 111, 2091–2104.e14 (2023).                    Institute at the Janelia Research Campus. Competing interests:
+     C. M. Niell, Joint coding of visual input and eye/head position          doi: 10.1016/j.neuron.2023.04.008; pmid: 37148872                 The authors declare no competing interests. License information:
+     in V1 of freely moving mice. Neuron 110, 3897–3906.e5               137. J. A. Charlton, R. L. T. Goris, Abstract deliberation by          Copyright © 2024 the authors, some rights reserved; exclusive
+     (2022). doi: 10.1016/j.neuron.2022.08.029; pmid: 36137549                visuomotor neurons in prefrontal cortex. Nat. Neurosci. 27,       licensee American Association for the Advancement of Science. No
+122. P. M. Goltstein, S. Reinert, T. Bonhoeffer, M. Hübener, Mouse            1167–1175 (2024). doi: 10.1038/s41593-024-01635-1;                claim to original US government works. https://www.science.org/
+     visual cortex areas represent perceptual and semantic                    pmid: 38684894                                                    about/science-licenses-journal-article-reuse
+     features of learned visual categories. Nat. Neurosci. 24,           138. A. Bellafard, G. Namvar, J. C. Kao, A. Vaziri, P. Golshani,
+     1441–1451 (2021). doi: 10.1038/s41593-021-00914-5;                       Volatile working memory representations crystallize with          SUPPLEMENTARY MATERIALS
+     pmid: 34545249                                                           practice. Nature 629, 1109–1117 (2024). doi: 10.1038/
+                                                                                                                                                science.org/doi/10.1126/science.adp7429
+123. C. Buetfering et al., Behaviorally relevant decision coding in           s41586-024-07425-w; pmid: 38750359
+                                                                                                                                                Movie S1
+     primary somatosensory cortex neurons. Nat. Neurosci. 25,            139. J. J. DiCarlo, D. Zoccolan, N. C. Rust, How does the brain
+     1225–1236 (2022). doi: 10.1038/s41593-022-01151-0;                       solve visual object recognition? Neuron 73, 415–434 (2012).       Submitted 8 June 2024; accepted 27 September 2024
+     pmid: 36042310                                                           doi: 10.1016/j.neuron.2012.01.010; pmid: 22325196                 10.1126/science.adp7429
+
+
+
+
+Stringer and Pachitariu, Science 386, eadp7429 (2024)                    8 November 2024                                                                                                                  9 of 9
+    Analysis methods for large-scale neuronal recordings
+    Carsen Stringer and Marius Pachitariu
+
+
+
+    Science 386 (6722), eadp7429. DOI: 10.1126/science.adp7429
+
+
+
+        Editor’s summary
+        Recent years have seen the development of a substantial number of new approaches to investigating the brain.
+        Some of the most promising are techniques that allow functional recordings of large numbers of neurons with
+        electrophysiological or optical imaging methods. Stringer and Pachitariu have reviewed both the advances in
+        technology for large-scale neural activity recording over the past decade and recent developments in analytic tools and
+        approaches to make sense of the resulting complex, high-dimensional data. They also offer a glimpse of what progress
+        we can expect in the near future and what challenges lie ahead. —Peter Stern
+
+
+
+
+                                                                                                                                       Downloaded from https://www.science.org on July 14, 2026
+    View the article online
+    https://www.science.org/doi/10.1126/science.adp7429
+    Permissions
+    https://www.science.org/help/reprints-and-permissions
+
+
+
+
+Use of this article is subject to the Terms of service
+
+Science (ISSN 1095-9203) is published by the American Association for the Advancement of Science. 1200 New York Avenue NW,
+Washington, DC 20005. The title Science is a registered trademark of AAAS.
+
+Copyright © 2024 The Authors, some rights reserved; exclusive licensee American Association for the Advancement of Science. No claim
+to original U.S. Government Works
+

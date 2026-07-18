@@ -174,7 +174,8 @@ cython_debug/
 .pypirc
 
 # Published source data are downloaded on demand. The only committed data are
-# the small, safe package assets under zhong2025/assets.
+# the two validated snapshots under code/metadata.
 .DS_Store
+.wrangler/
 data/
-zhong2025/assets/*.part
+code/metadata/*.part

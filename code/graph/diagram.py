@@ -23,8 +23,6 @@ class GraphDiagram(GraphContext):
 
     @staticmethod
     def _type_label(annotation: Any, default: Any = inspect.Parameter.empty) -> str:
-        """Return a short, readable type label without enforcing a type system."""
-
         if annotation is inspect.Parameter.empty:
             if default is inspect.Parameter.empty or default is None:
                 return "value"
@@ -41,8 +39,6 @@ class GraphDiagram(GraphContext):
 
     @staticmethod
     def _type_colour(type_label: str) -> str:
-        """Use a small Blueprint-like colour vocabulary for socket types."""
-
         lowered = type_label.lower()
         if "bool" in lowered:
             return "#d84a4a"
@@ -76,8 +72,6 @@ class GraphDiagram(GraphContext):
 
     @staticmethod
     def _fit_port_label(label: str, *, shared_row: bool) -> str:
-        """Keep opposing input/output labels inside their side of a node."""
-
         limit = 22 if shared_row else 38
         return label if len(label) <= limit else label[: limit - 1] + "…"
 
@@ -478,7 +472,5 @@ class GraphDiagram(GraphContext):
         )
 
     def diagram(self, run: Run | None = None):
-        """Return an SVG node-and-wire view of the flow (ports, wires, values)."""
-
         widgets = self._widgets()
         return widgets.HTML(value=self._diagram_html(run))

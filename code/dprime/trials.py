@@ -17,8 +17,6 @@ AREA_IDS: Mapping[str, tuple[int, ...]] = {
 
 
 def _positive_integer(name: str, value: Any, *, minimum: int = 1) -> int:
-    """Validate count-like public arguments without silently truncating them."""
-
     if isinstance(value, (bool, np.bool_)):
         raise ValueError(f"{name} must be an integer of at least {minimum}")
     try:

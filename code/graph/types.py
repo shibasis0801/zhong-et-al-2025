@@ -38,8 +38,6 @@ class NodeError(RuntimeError):
         self.inputs = MappingProxyType(dict(inputs or {}))
 
     def to_dict(self) -> dict[str, Any]:
-        """Return bounded failure context without the traceback machinery."""
-
         return {
             "type": type(self).__name__,
             "message": _safe_error_text(self),
@@ -57,8 +55,6 @@ class NodeError(RuntimeError):
 
 
 def _public_value(value: Any) -> Any:
-    """Keep simple values exact and summarize anything potentially large."""
-
     if value is None or isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, str) and len(value) <= 120:
@@ -185,8 +181,6 @@ class Run(Mapping[str, Any]):
 
     @property
     def terminals(self) -> Mapping[str, Any]:
-        """Every output not consumed by another node in this run."""
-
         return MappingProxyType(
             {port: self.outputs[port] for port in self.terminal_ports}
         )
@@ -361,7 +355,6 @@ def _spec_key(spec: Any) -> str:
 
 
 def _make_store(cache: Any, graph_name: str) -> Any:
-    """Resolve the cache= option to a store (get/put) or None. Cache is per-teammate."""
     if not cache:
         return None
     if cache == "memory":
@@ -397,5 +390,4 @@ def _fingerprint_value(value: Any) -> str | None:
 
 
 def _cacheable_result(produced: Mapping[str, Any]) -> bool:
-    """Skip caching outputs that are unsafe or cheap to persist (matplotlib figures)."""
     return not any(_is_matplotlib_figure(value) for value in produced.values())

@@ -25,8 +25,6 @@ class AlignmentReport:
     dropped_trailing_behavior_frames: int
 
     def to_dict(self) -> dict[str, int]:
-        """Return the frame-alignment decision as an ordinary dictionary."""
-
         return {
             "neural_frames": self.neural_frames,
             "behavior_frames": self.behavior_frames,
@@ -43,8 +41,6 @@ class AlignmentReport:
 
 
 def decimeters_to_meters(position_dm: ArrayLike) -> NDArray[np.float64]:
-    """Convert release position units (decimetres) to metres."""
-
     values = np.asarray(position_dm, dtype=np.float64)
     return values / 10.0
 

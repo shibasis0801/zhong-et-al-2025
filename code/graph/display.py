@@ -10,8 +10,6 @@ from typing import Any
 
 
 def _safe_error_text(error: BaseException) -> str:
-    """Return an exception message even when a custom ``__str__`` is broken."""
-
     try:
         return str(error)
     except Exception:
@@ -39,8 +37,6 @@ def _bounded_markup(payload: str, kind: str) -> str:
 
 
 def _rich_result_payload(value: Any, method_name: str) -> Any:
-    """Call one explicitly declared IPython rich-repr method, if present."""
-
     try:
         inspect.getattr_static(value, method_name)
     except AttributeError:
@@ -55,8 +51,6 @@ def _rich_result_payload(value: Any, method_name: str) -> Any:
 
 
 def _is_matplotlib_figure(value: Any) -> bool:
-    """Recognize a Matplotlib Figure without importing the scientific runtime."""
-
     return any(
         current.__name__ == "Figure"
         and current.__module__.startswith("matplotlib.")
@@ -136,8 +130,6 @@ def _result_html(value: Any) -> str:
 
 
 def _dict_html(value: Mapping[str, Any]) -> str:
-    """Render an escaped, copyable dictionary in notebook output."""
-
     rendered = pprint.pformat(dict(value), width=100, sort_dicts=False)
     return (
         "<pre style='margin:.3rem 0;padding:.7rem .8rem;max-width:1100px;"

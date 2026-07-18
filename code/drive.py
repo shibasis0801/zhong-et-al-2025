@@ -345,6 +345,8 @@ def reload_workspace_modules() -> None:
         "graph.types",
         "graph.diagram",
         "graph.widget",
+        "joiner",
+        "position",
         "release",
         "sql",
         "warehouse",

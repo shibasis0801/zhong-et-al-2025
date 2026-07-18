@@ -97,8 +97,6 @@ class Graph(GraphDiagram, GraphWidget):
 
     @property
     def setting_defaults(self) -> Mapping[str, Any]:
-        """Defaults for visible settings; required settings map to ``None``."""
-
         defaults = {}
         for name, (_, parameter) in self._settings.items():
             defaults[name] = (
@@ -109,8 +107,6 @@ class Graph(GraphDiagram, GraphWidget):
         return MappingProxyType(defaults)
 
     def validate(self, **settings: Any) -> "Graph":
-        """Validate required external settings and return this graph."""
-
         unknown = sorted(set(settings) - set(self._settings))
         if unknown:
             raise GraphError(f"unknown run settings: {', '.join(unknown)}")
@@ -194,8 +190,6 @@ class Graph(GraphDiagram, GraphWidget):
         }
 
     def to_dict(self) -> dict[str, Any]:
-        """Return the graph structure as an ordinary JSON-safe dictionary."""
-
         return self.describe()
 
     def __repr__(self) -> str:
@@ -221,8 +215,6 @@ class Graph(GraphDiagram, GraphWidget):
         raise GraphError(f"unknown node or output for until={until!r}")
 
     def _execution_nodes(self, until: str | None) -> tuple[Node, ...]:
-        """Return the target's dependency closure in deterministic order."""
-
         if until is None:
             return self.nodes
         target = self.nodes[self._stop_index(until)]
